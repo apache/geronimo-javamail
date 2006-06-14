@@ -1,0 +1,169 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.apache.geronimo.javamail</groupId>
+  <artifactId>mail</artifactId>
+  <packaging>pom</packaging>
+  <name>Geronimo Javamail</name>
+  <version>1.0-SNAPSHOT</version>
+
+  <!--
+   |
+   | Continuum configuration for GBuild
+   |
+   -->
+  <issueManagement>
+    <system>jira</system>
+    <url>http://issues.apache.org/jira/browse/GERONIMO</url>
+  </issueManagement>
+  <ciManagement>
+    <system>continuum</system>
+    <url>http://ci.gbuild.org/continuum</url>
+    <notifiers>
+      <notifier>
+        <configuration>
+          <address>scm@geronimo.apache.org</address>
+        </configuration>
+      </notifier>
+    </notifiers>
+  </ciManagement>
+
+  <properties>
+    <!--
+     |
+     | Geronimo module versions
+     |
+     | Note: when modules move from SNAPSHOT to an official release, they
+     | should be removed from GBuild (assuming they were added to GBuild).
+     |
+     -->
+    <javamailProvider13Version>1.0-SNAPSHOT</javamailProvider13Version>
+    <javamailProvider14Version>1.0-SNAPSHOT</javamailProvider14Version>
+
+    <javamailSpecs13Version>1.2-SNAPSHOT</javamailSpecs13Version>
+    <javamailSpecs14Version>1.0-SNAPSHOT</javamailSpecs14Version>
+
+    <javamailMail13Version>1.0-SNAPSHOT</javamailMail13Version>
+    <javamailMail14Version>1.0-SNAPSHOT</javamailMail14Version>
+
+    <geronimoSpecsActivationVersion>1.1</geronimoSpecsActivationVersion>
+  </properties>
+
+  <build>
+    <defaultGoal>install</defaultGoal>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
+
+    <resources>
+        <resource>
+            <directory>src/resources</directory>
+        </resource>
+    </resources>
+
+    <testResources>
+        <testResource>
+            <directory>src/test-data</directory>
+        </testResource>
+        <testResource>
+            <directory>src/test-resources</directory>
+        </testResource>
+    </testResources>
+
+    <plugins>
+      <plugin>
+        <artifactId>maven-one-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>install-maven-one-repository</goal>
+              <goal>deploy-maven-one-repository</goal>
+            </goals>
+            <configuration>
+              <remoteRepositoryId>apache</remoteRepositoryId>
+              <remoteRepositoryUrl>scpexe://cvs.apache.org/www/cvs.apache.org/repository</remoteRepositoryUrl>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.4</source>
+          <target>1.4</target>
+        </configuration>
+      </plugin>
+    </plugins>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh-external</artifactId>
+        <version>1.0-alpha-6</version>
+      </extension>
+    </extensions>
+  </build>
+
+  <!--
+   |
+   | Modules that are final (1.0 or other) should not be built and deployed
+   | with the SNAPSHOT versioned modules.
+   |
+   -->
+  <modules>
+    <module>javamail-provider-1.3</module>
+    <module>mail-1.3</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <!--
+       |
+       | Geronimo specification versions
+       |
+       -->
+      <dependency>
+        <groupId>org.apache.geronimo.specs</groupId>
+        <artifactId>geronimo-activation_1.0.2_spec</artifactId>
+        <version>${geronimoSpecsActivationVersion}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.geronimo.specs</groupId>
+        <artifactId>geronimo-javamail_1.3.1_spec</artifactId>
+        <version>${javamailSpecs13Version}</version>
+      </dependency>
+   </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>plugin-snapshots</id>
+      <name>Maven Central Plugins Development Repository</name>
+      <url>http://snapshots.maven.codehaus.org/maven2</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <distributionManagement>
+    <repository>
+      <id>apache-repo</id>
+      <name>Apache CVS Repository</name>
+      <url>scpexe://cvs.apache.org/www/www.apache.org/dist/java-repository</url>
+    </repository>
+    <snapshotRepository>
+      <id>apache-snapshots</id>
+      <name>Apache CVS Development Repository</name>
+      <url>scpexe://cvs.apache.org/www/cvs.apache.org/maven-snapshot-repository</url>
+    </snapshotRepository>
+    <site>
+      <id>geronimo-website</id>
+      <url>scpexe://minotaur.apache.org/www/geronimo.apache.org/maven/</url>
+    </site>
+  </distributionManagement>
+
+</project>

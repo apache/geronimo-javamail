@@ -1,0 +1,16 @@
+<assembly>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/</outputDirectory>
+      <unpack>true</unpack>
+      <scope>runtime</scope>
+      <excludes>
+        <exclude>org.apache.geronimo.specs:geronimo-activation_1.0.2_spec</exclude>
+      </excludes>
+    </dependencySet>
+  </dependencySets>
+</assembly>
