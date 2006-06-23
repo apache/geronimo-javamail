@@ -57,7 +57,7 @@
     <javamailProvider13Version>1.0-SNAPSHOT</javamailProvider13Version>
     <javamailProvider14Version>1.0-SNAPSHOT</javamailProvider14Version>
 
-    <javamailSpecs13Version>1.2-SNAPSHOT</javamailSpecs13Version>
+    <javamailSpecs13Version>1.1-SNAPSHOT</javamailSpecs13Version>
     <javamailSpecs14Version>1.0-SNAPSHOT</javamailSpecs14Version>
 
     <javamailMail13Version>1.0-SNAPSHOT</javamailMail13Version>
