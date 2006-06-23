@@ -184,4 +184,10 @@
     </site>
   </distributionManagement>
 
+  <scm>
+    <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/</connection>
+    <developerConnection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/</developerConnection>
+    <url>http://svn.apache.org/viewcvs.cgi/geronimo/javamail/trunk/</url>
+  </scm>
+
 </project>
