@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>geronimo-javamail_1.3_mail</artifactId>
-    <name>Geronimo Javamail :: 1.3 Mail</name>
+    <name>Geronimo JavaMail :: 1.3 Mail</name>
     <packaging>pom</packaging>
     
     <dependencies>
