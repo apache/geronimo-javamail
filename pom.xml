@@ -28,7 +28,7 @@
     </parent>
     
     <groupId>org.apache.geronimo.javamail</groupId>
-    <artifactId>mail</artifactId>
+    <artifactId>javamail</artifactId>
     <name>Geronimo Javamail</name>
     <packaging>pom</packaging>
     
@@ -143,8 +143,8 @@
             </activation>
 
             <modules>
-                <module>javamail-provider-1.3</module>
-                <module>mail-1.3</module>
+                <module>geronimo-javamail_1.3.1_provider</module>
+                <module>geronimo-javamail_1.3_mail</module>
             </modules>
         </profile>
     </profiles>

@@ -20,43 +20,52 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     
     <modelVersion>4.0.0</modelVersion>
-    
+
     <parent>
-        <artifactId>mail</artifactId>
         <groupId>org.apache.geronimo.javamail</groupId>
+        <artifactId>javamail</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>geronimo-javamail_1.3.1_provider</artifactId>
-    <name>Geronimo JavaMail :: 1.3 Providers</name>
-    
-    <!--
-    
-    HACK: Need to explicitly configure SCM for this module since its artifactId
-          does not match the directory it lives in.
-    
-    FIXME: Rename module directory or artifactId.
-    
-    -->
-    <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/javamail-provider-1.3/</connection>
-        <developerConnection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/javamail-provider-1.3/</developerConnection>
-        <url>http://svn.apache.org/viewcvs.cgi/geronimo/javamail/trunk/javamail-provider-1.3/</url>
-    </scm>
+    <artifactId>geronimo-javamail_1.3_mail</artifactId>
+    <name>Geronimo Javamail :: 1.3 Mail</name>
+    <packaging>pom</packaging>
     
     <dependencies>
         
         <dependency>
-            <groupId>org.apache.geronimo.specs</groupId>
-            <artifactId>geronimo-activation_1.0.2_spec</artifactId>
+            <groupId>org.apache.geronimo.javamail</groupId>
+            <artifactId>geronimo-javamail_1.3.1_provider</artifactId>
+            <version>${pom.version}</version>
         </dependency>
-
+        
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-javamail_1.3.1_spec</artifactId>
         </dependency>
         
     </dependencies>
-
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>${pom.basedir}/src/main/assembly/javamail.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    
 </project>
-
