@@ -66,6 +66,7 @@
         <plugins>
             <!--
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-one-plugin</artifactId>
                 <executions>
                     <execution>
@@ -83,6 +84,7 @@
             -->
             
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <source>1.4</source>
