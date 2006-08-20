@@ -41,7 +41,7 @@
     <scm>
         <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/</connection>
         <developerConnection>scm:svn:https://${maven.username}@svn.apache.org/repos/asf/geronimo/javamail/trunk/</developerConnection>
-        <url>http://svn.apache.org/viewcvs.cgi/geronimo/javamail/trunk/</url>
+        <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/</url>
     </scm>
     
     <dependencyManagement>
