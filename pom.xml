@@ -7,9 +7,9 @@
     to you under the Apache License, Version 2.0 (the
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
-    
+
      http://www.apache.org/licenses/LICENSE-2.0
-    
+
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -21,47 +21,47 @@
 <!-- $Rev$ $Date$ -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    
+
     <modelVersion>4.0.0</modelVersion>
-    
+
     <parent>
         <groupId>org.apache.geronimo.genesis.config</groupId>
         <artifactId>project-config</artifactId>
         <version>1.1-SNAPSHOT</version>
     </parent>
-    
+
     <groupId>org.apache.geronimo.javamail</groupId>
     <artifactId>javamail</artifactId>
     <name>Geronimo JavaMail</name>
     <packaging>pom</packaging>
-    
+
     <version>1.0-SNAPSHOT</version>
-    
+
     <description>
         Geronimmo JavaMail provider.
     </description>
-    
+
     <scm>
         <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/</connection>
         <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunk/</developerConnection>
         <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/</url>
     </scm>
-    
+
     <dependencyManagement>
         <dependencies>
-            
+
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-activation_1.0.2_spec</artifactId>
                 <version>1.1</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-javamail_1.3.1_spec</artifactId>
                 <version>1.1</version>
             </dependency>
-            
+
         </dependencies>
     </dependencyManagement>
 
@@ -85,7 +85,7 @@
                 </executions>
             </plugin>
             -->
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -94,7 +94,7 @@
                     <target>1.4</target>
                 </configuration>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-idea-plugin</artifactId>
@@ -119,7 +119,7 @@
         NOTE: The default repositories are picked up by Genesis, but need to
               specify where Genesis lives to pick it up + any additional repositories.
         -->
-        
+
         <repository>
             <id>apache-snapshots</id>
             <name>Apache Snapshots Repository</name>
@@ -135,14 +135,14 @@
             </releases>
         </repository>
     </repositories>
-    
+
     <distributionManagement>
         <site>
             <id>geronimo-website</id>
             <url>scp://people.apache.org/www/geronimo.apache.org/maven/javamail</url>
         </site>
     </distributionManagement>
-    
+
     <profiles>
         <profile>
             <id>default</id>
@@ -153,7 +153,7 @@
 
             <modules>
                 <module>geronimo-javamail_1.3.1_provider</module>
-                <module>geronimo-javamail_1.3_mail</module>
+                <module>geronimo-javamail_1.3.1_mail</module>
             </modules>
         </profile>
     </profiles>
