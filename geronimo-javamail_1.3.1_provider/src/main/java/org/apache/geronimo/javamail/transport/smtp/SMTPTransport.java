@@ -1251,6 +1251,8 @@ public class SMTPTransport extends Transport {
                         Object[] createSocketArgs = new Object[] { host, portArg };
                         socket = (Socket) createSocket.invoke(defFactory, createSocketArgs);
                     }
+                    // now break out and configure the socket.
+                    break;
                 } catch (Throwable e) {
                     // if we're allowed to fallback, then use the default
                     // factory and try this again. We only
