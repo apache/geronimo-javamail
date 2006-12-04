@@ -46,19 +46,19 @@
         <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunk/</developerConnection>
         <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/</url>
     </scm>
-    
+
     <properties>
         <!--
         NOTE: Project version, to be used instead of ${pom.version} since that
               value magically changes when using SNAPSHOT versions.
-              
+
               This value *must* be kept in sync with the value of the <version>
               element, and it will need to be changed manually before a release,
               as the maven-release-plugin will not update this value.
         -->
         <version>1.0-SNAPSHOT</version>
     </properties>
-    
+
     <dependencyManagement>
         <dependencies>
 
@@ -71,8 +71,20 @@
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-javamail_1.3.1_spec</artifactId>
-                <version>1.1</version>
+                <version>1.2-SNAPSHOT</version>
             </dependency>
+
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-activation_1.1_spec</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-javamail_1.4_spec</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
 
         </dependencies>
     </dependencyManagement>
@@ -166,6 +178,8 @@
             <modules>
                 <module>geronimo-javamail_1.3.1_provider</module>
                 <module>geronimo-javamail_1.3.1_mail</module>
+                <module>geronimo-javamail_1.4_provider</module>
+                <module>geronimo-javamail_1.4_mail</module>
             </modules>
         </profile>
     </profiles>
