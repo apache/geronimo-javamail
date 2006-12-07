@@ -33,9 +33,10 @@ import java.io.InputStream;
 public interface POP3Response {
 
     /**
-     * Returns the response OK or ERR
+     * Returns the response OK, CHALLENGE or ERR
      * <ul>
      * <li>OK --> +OK in pop3 spec
+     * <li>CHALLENGE --> + in pop3 spec
      * <li>ERR --> -ERR in pop3 spec
      * </ul>
      */

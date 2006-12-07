@@ -37,10 +37,44 @@ public class POP3Store extends Store {
 
     private POP3Connection pop3Con;
 
-    public POP3Store(Session session, URLName urlName) {
-        super(session, urlName);
+    protected static final int DEFAULT_MAIL_POP3_PORT = 110;
+    private boolean sslConnection;
+    private int defaultPort;
+    
+    private String protocol;
+    public POP3Store(Session session, URLName name) {
+        this(session, name, "pop3", DEFAULT_MAIL_POP3_PORT, false);
     }
 
+    /**
+     * Common constructor used by the POP3Store and POP3SSLStore classes
+     * to do common initialization of defaults.
+     *
+     * @param session
+     *            The host session instance.
+     * @param name
+     *            The URLName of the target.
+     * @param protocol
+     *            The protocol type ("pop3"). This helps us in
+     *            retrieving protocol-specific session properties.
+     * @param defaultPort
+     *            The default port used by this protocol. For pop3, this will
+     *            be 110. The default for pop3 with ssl is 995.
+     * @param sslConnection
+     *            Indicates whether an SSL connection should be used to initial
+     *            contact the server. This is different from the STARTTLS
+     *            support, which switches the connection to SSL after the
+     *            initial startup.
+     */
+    protected POP3Store(Session session, URLName name, String protocol, int defaultPort, boolean sslConnection) {
+        super(session, name);
+        this.protocol = protocol;
+
+        // these are defaults based on what the superclass specifies.
+        this.sslConnection = sslConnection;
+        this.defaultPort = defaultPort;
+
+    }
     /**
      * @see javax.mail.Store#getDefaultFolder()
      * 
@@ -91,7 +125,7 @@ public class POP3Store extends Store {
                 try {
                     portNum = Integer.parseInt(portstring);
                 } catch (NumberFormatException e) {
-                    portNum = 110;
+                    portNum = defaultPort;
                 }
             }
         }
@@ -100,7 +134,7 @@ public class POP3Store extends Store {
          * Obtaining a connection to the server.
          * 
          */
-        pop3Con = new POP3Connection(this.session, host, portNum);
+        pop3Con = new POP3Connection(this.session, host, portNum, sslConnection, protocol);
         try {
             pop3Con.open();
         } catch (Exception e) {

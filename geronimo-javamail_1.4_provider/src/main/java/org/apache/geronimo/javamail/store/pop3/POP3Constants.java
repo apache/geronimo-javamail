@@ -39,4 +39,6 @@ public interface POP3Constants {
     public final static int OK = 0;
 
     public final static int ERR = 1;
+    
+    public final static int CHALLENGE = 2;
 }

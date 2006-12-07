@@ -76,6 +76,12 @@ public final class POP3ResponseBuilder implements POP3Constants {
         } else if (line.startsWith("-ERR")) {
             status = ERR;
             line = removeStatusField(line);
+        }else if (line.startsWith("+")) {
+        	status = CHALLENGE;
+        	line = removeStatusField(line);
+        	if (isMultiLineResponse) {
+        		data = getMultiLineResponse(session, reader);
+        	}
         } else {
             throw new MessagingException("Unexpected response: " + line);
         }

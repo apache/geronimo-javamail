@@ -184,5 +184,52 @@ public final class POP3CommandFactory implements POP3Constants {
             }
         };
     }
+    
+    public static POP3Command getCOMMAND_CAPA() {
+    	return new POP3Command() {
+    		public String getCommand() {
+                return "CAPA" + CRLF;
+    		}
+    		
+    		public boolean isMultiLineResponse() {
+    			return true;
+    		}
+    	};
+    }
 
+    public static POP3Command getCOMMAND_AUTH(final String protocol) {
+    	return new POP3Command() {
+    		public String getCommand() {
+    			return "AUTH " + protocol + CRLF;
+    		}
+    		
+    		public boolean isMultiLineResponse() {
+    			return false;
+    		}
+    	};
+    }
+    
+    public static POP3Command getCOMMAND_AUTH(final String protocol, final String initialResponse) {
+    	return new POP3Command() {
+    		public String getCommand() {
+    			return "AUTH " + protocol + " " + initialResponse + CRLF;
+    		}
+    		
+    		public boolean isMultiLineResponse() {
+    			return false;
+    		}
+    	};
+    }
+    
+    public static POP3Command getCOMMAND_ChallengeReply(final String command) {
+    	return new POP3Command() {
+    			public String getCommand() {
+   						return command + CRLF;
+   				}
+    			
+    			public boolean isMultiLineResponse() {
+    				return false;
+    			}	
+    		};
+    }
 }
