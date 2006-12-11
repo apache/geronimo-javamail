@@ -34,7 +34,7 @@
             <unpack>true</unpack>
             <scope>runtime</scope>
             <excludes>
-                <exclude>org.apache.geronimo.specs:geronimo-activation_1.0.2_spec</exclude>
+                <exclude>org.apache.geronimo.specs:geronimo-activation_1.1_spec</exclude>
             </excludes>
         </dependencySet>
     </dependencySets>
