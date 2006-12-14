@@ -47,18 +47,6 @@
         <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/</url>
     </scm>
 
-    <properties>
-        <!--
-        NOTE: Project version, to be used instead of ${pom.version} since that
-              value magically changes when using SNAPSHOT versions.
-
-              This value *must* be kept in sync with the value of the <version>
-              element, and it will need to be changed manually before a release,
-              as the maven-release-plugin will not update this value.
-        -->
-        <version>1.0</version>
-    </properties>
-
     <dependencyManagement>
         <dependencies>
 
