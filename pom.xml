@@ -56,7 +56,7 @@
               element, and it will need to be changed manually before a release,
               as the maven-release-plugin will not update this value.
         -->
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0</version>
     </properties>
 
     <dependencyManagement>
