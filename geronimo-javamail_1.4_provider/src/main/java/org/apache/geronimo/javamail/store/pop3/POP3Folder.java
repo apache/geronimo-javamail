@@ -155,8 +155,11 @@ public class POP3Folder extends Folder {
             // JavaMail API has no method in Folder to expose the total
             // size (no of bytes) of the mail drop;
 
-            msgCache = new Vector(msgCount);
-            msgCache.setSize(msgCount);
+            // NB:  We use the actual message number to access the messages from 
+            // the cache, which is origin 1.  Vectors are origin 0, so we add one additional 
+            // element and burn the 
+            msgCache = new Vector(msgCount + 1);
+            msgCache.setSize(msgCount + 1);
 
         } catch (Exception e) {
             throw new MessagingException("Unable to execute STAT command", e);
@@ -173,7 +176,8 @@ public class POP3Folder extends Folder {
             if (mode == READ_WRITE) {
                 // find all messages marked deleted and issue DELE commands
                 POP3Message m;
-                for (int i = 0; i < msgCache.size(); i++) {
+                // NB: the first element in the cache is not used.
+                for (int i = 1; i < msgCache.size(); i++) {
                     if ((m = (POP3Message) msgCache.elementAt(i)) != null) {
                         if (m.isSet(Flags.Flag.DELETED)) {
                             try {
