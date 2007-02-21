@@ -347,7 +347,7 @@ public class SMTPTransport extends Transport {
             debugOut("Connecting to server " + host + ":" + port + " for user " + username);
         }
 
-        // first check to see if we need to authenticate. If we need this, then
+        // now check to see if we need to authenticate. If we need this, then
         // we must have a username and
         // password specified. Failing this may result in a user prompt to
         // collect the information.
@@ -373,6 +373,11 @@ public class SMTPTransport extends Transport {
                 port = Integer.parseInt(configuredPort);
             }
         }
+    	
+    	// Before we do anything, let's make sure that we succesfully received a host
+    	if ( host == null ) {
+    		host = DEFAULT_MAIL_HOST;
+    	}
 
         try {
 

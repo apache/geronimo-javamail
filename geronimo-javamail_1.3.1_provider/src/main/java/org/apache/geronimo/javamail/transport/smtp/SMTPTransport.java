@@ -361,6 +361,12 @@ public class SMTPTransport extends Transport {
         if (mustAuthenticate && (username == null || password == null)) {
             return false;
         }
+        
+        
+    	// Before we do anything, let's make sure that we succesfully received a host
+    	if ( host == null ) {
+    		host = DEFAULT_MAIL_HOST;
+    	}
 
         // if the port is defaulted, then see if we have something configured in
         // the session.
