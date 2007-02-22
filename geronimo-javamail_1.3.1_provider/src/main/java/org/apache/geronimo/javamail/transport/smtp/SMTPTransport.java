@@ -343,9 +343,6 @@ public class SMTPTransport extends Transport {
      */
     protected boolean protocolConnect(String host, int port, String username, String password)
             throws MessagingException {
-        if (debug) {
-            debugOut("Connecting to server " + host + ":" + port + " for user " + username);
-        }
 
         // first check to see if we need to authenticate. If we need this, then
         // we must have a username and
@@ -378,6 +375,10 @@ public class SMTPTransport extends Transport {
             if (configuredPort != null) {
                 port = Integer.parseInt(configuredPort);
             }
+        }
+        
+        if (debug) {
+            debugOut("Connecting to server " + host + ":" + port + " for user " + username);
         }
 
         try {
@@ -1562,7 +1563,10 @@ public class SMTPTransport extends Transport {
             // get what the InternetAddress class believes to be the local
             // address.
             else {
-                from = InternetAddress.getLocalAddress(session).getAddress();
+                InternetAddress local = InternetAddress.getLocalAddress(session);
+                if (local != null) {
+                    from = local.getAddress(); 
+                }
             }
         }
 

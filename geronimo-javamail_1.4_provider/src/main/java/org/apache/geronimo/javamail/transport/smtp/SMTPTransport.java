@@ -1561,7 +1561,10 @@ public class SMTPTransport extends Transport {
             // get what the InternetAddress class believes to be the local
             // address.
             else {
-                from = InternetAddress.getLocalAddress(session).getAddress();
+                InternetAddress local = InternetAddress.getLocalAddress(session);
+                if (local != null) {
+                    from = local.getAddress(); 
+                }
             }
         }
 
