@@ -1448,14 +1448,15 @@ public class SMTPTransport extends Transport {
      */
     protected void sendQuit() throws MessagingException {
         // there's yet another property that controls whether we should wait for
-        // a
-        // reply for a QUIT command. If on, just send the command and get outta
-        // here.
+        // a reply for a QUIT command. If true, we're suppposed to wait for a response 
+        // from the QUIT command.  Otherwise we just send the QUIT and bail.  The default 
+        // is "false"
         if (isProtocolPropertyTrue(MAIL_SMTP_QUITWAIT)) {
-            sendLine("QUIT");
-        } else {
             // handle as a real command...we're going to ignore the response.
             sendCommand("QUIT");
+        } else {
+            // just send the command without waiting for a response. 
+            sendLine("QUIT");
         }
     }
 
