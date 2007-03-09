@@ -42,19 +42,13 @@
     </description>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunk/</developerConnection>
-        <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/</url>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.4/</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunkgeronimo-javamail_1.4//</developerConnection>
+        <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/geronimo-javamail_1.4/</url>
     </scm>
 
     <dependencyManagement>
         <dependencies>
-
-            <dependency>
-                <groupId>org.apache.geronimo.specs</groupId>
-                <artifactId>geronimo-activation_1.0.2_spec</artifactId>
-                <version>1.2</version>
-            </dependency>
 
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
