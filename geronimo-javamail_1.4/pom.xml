@@ -31,7 +31,7 @@
     </parent>
 
     <groupId>org.apache.geronimo.javamail</groupId>
-    <artifactId>javamail</artifactId>
+    <artifactId>javamail-1.4</artifactId>
     <name>Geronimo JavaMail</name>
     <packaging>pom</packaging>
 
@@ -58,12 +58,6 @@
 
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
-                <artifactId>geronimo-javamail_1.3.1_spec</artifactId>
-                <version>1.2</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-activation_1.1_spec</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
@@ -79,25 +73,6 @@
 
     <build>
         <plugins>
-            <!--
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-one-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>install-maven-one-repository</goal>
-                            <goal>deploy-maven-one-repository</goal>
-                        </goals>
-                        <configuration>
-                            <remoteRepositoryId>apache</remoteRepositoryId>
-                            <remoteRepositoryUrl>scp://people.apache.org/www/cvs.apache.org/repository</remoteRepositoryUrl>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            -->
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -164,8 +139,6 @@
             </activation>
 
             <modules>
-                <module>geronimo-javamail_1.3.1_provider</module>
-                <module>geronimo-javamail_1.3.1_mail</module>
                 <module>geronimo-javamail_1.4_provider</module>
                 <module>geronimo-javamail_1.4_mail</module>
             </modules>
