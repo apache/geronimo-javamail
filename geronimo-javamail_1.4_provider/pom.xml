@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.apache.geronimo.javamail</groupId>
         <artifactId>javamail-1.4</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -39,13 +39,13 @@
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-activation_1.1_spec</artifactId>
-            <version>1.0-M1</version>
+            <version>1.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-javamail_1.4_spec</artifactId>
-            <version>1.0-M1</version>
+            <version>1.0</version>
         </dependency>
 
     </dependencies>

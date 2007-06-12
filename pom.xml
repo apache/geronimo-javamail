@@ -35,7 +35,7 @@
     <name>Geronimo JavaMail</name>
     <packaging>pom</packaging>
 
-    <version>1.1-SNAPSHOT</version>
+    <version>1.1</version>
 
     <description>
         Geronimmo JavaMail provider.
@@ -43,7 +43,7 @@
 
     <scm>
         <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.4/</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunkgeronimo-javamail_1.4//</developerConnection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.4//</developerConnection>
         <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/geronimo-javamail_1.4/</url>
     </scm>
 
@@ -53,13 +53,13 @@
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-activation_1.1_spec</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>1.0</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-javamail_1.4_spec</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>1.0</version>
             </dependency>
 
         </dependencies>
