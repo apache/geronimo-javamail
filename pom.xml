@@ -44,7 +44,7 @@
     <scm>
         <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/tags/geronimo-javamail_1.4-1.2</connection>
         <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/tags/geronimo-javamail_1.4-1.2</developerConnection>
-        <url>http://svn.apache.org/viewvc/geronimo/javamail/tag/geronimo-javamail_1.4-1.2</url>
+        <url>http://svn.apache.org/viewvc/geronimo/javamail/tags/geronimo-javamail_1.4-1.2</url>
     </scm>
 
     <dependencyManagement>
