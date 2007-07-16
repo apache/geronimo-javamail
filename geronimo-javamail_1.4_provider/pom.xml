@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.apache.geronimo.javamail</groupId>
         <artifactId>geronimo-javamail-1.4</artifactId>
-        <version>1.2-SNAPSHOT</version>
+        <version>1.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
