@@ -32,6 +32,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import javax.mail.Address;
@@ -1383,17 +1384,9 @@ public class SMTPTransport extends Transport {
      */
     protected boolean getWelcome() throws MessagingException {
         SMTPReply line = getReply();
-        // process any error now
-        if (line.isError()) {
-            return false; 
-        }
-        // Some servers send a multi-line welcome message.  Keep 
-        // reading lines until we hit the end of the response. 
-        while (line.isContinued()) {
-            line = getReply(); 
-        }
-        // this worked. 
-        return true; 
+        // just return the error status...we don't care about any of the 
+        // response information
+        return !line.isError();
     }
 
     /**
@@ -1733,6 +1726,11 @@ public class SMTPTransport extends Transport {
     protected SMTPReply getReply() throws MessagingException {
         try {
             lastServerResponse = new SMTPReply(receiveLine());
+            // if the first line we receive is a continuation, continue 
+            // reading lines until we reach the non-continued one. 
+            while (lastServerResponse.isContinued()) {
+                lastServerResponse.addLine(receiveLine()); 
+            }
         } catch (MalformedSMTPReplyException e) {
             throw new MessagingException(e.toString());
         } catch (MessagingException e) {
@@ -1881,29 +1879,24 @@ public class SMTPTransport extends Transport {
     protected boolean sendEhlo() throws MessagingException {
         sendLine("EHLO " + getLocalHost());
 
-        SMTPReply line = getReply();
+        SMTPReply reply = getReply();
 
         // we get a 250 code back. The first line is just a greeting, and
         // extensions are identifed on
         // continuations. If this fails, then we'll try once more with HELO to
         // establish bona fides.
-        if (line.getCode() != COMMAND_ACCEPTED) {
+        if (reply.getCode() != COMMAND_ACCEPTED) {
             return false;
         }
 
         // get a fresh extension mapping table.
         serverExtensionArgs = new HashMap();
 
+        List lines = reply.getLines(); 
         // process all of the continuation lines
-        while (line.isContinued()) {
-            // get the next line
-            line = getReply();
-            if (line.getCode() != COMMAND_ACCEPTED) {
-                // all EHLO failures go back to the HELO failback step.
-                return false;
-            }
+        for (int i = 1; i < lines.size(); i++) {
             // go process the extention
-            processExtension(line.getMessage());
+            processExtension((String)lines.get(i));
         }
         return true;
     }
