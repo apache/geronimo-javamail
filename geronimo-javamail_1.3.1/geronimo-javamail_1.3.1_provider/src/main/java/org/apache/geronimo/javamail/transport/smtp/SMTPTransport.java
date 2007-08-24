@@ -1383,7 +1383,17 @@ public class SMTPTransport extends Transport {
      */
     protected boolean getWelcome() throws MessagingException {
         SMTPReply line = getReply();
-        return !line.isError();
+        // process any error now
+        if (line.isError()) {
+            return false; 
+        }
+        // Some servers send a multi-line welcome message.  Keep 
+        // reading lines until we hit the end of the response. 
+        while (line.isContinued()) {
+            line = getReply(); 
+        }
+        // this worked. 
+        return true; 
     }
 
     /**
