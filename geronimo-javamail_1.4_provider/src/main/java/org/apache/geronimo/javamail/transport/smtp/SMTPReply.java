@@ -18,6 +18,9 @@
  */
 
 package org.apache.geronimo.javamail.transport.smtp;
+ 
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Util class to represent a reply from a SMTP server
@@ -33,6 +36,9 @@ class SMTPReply {
 
     // the returned message text
     private final String message;
+    
+    // additional returned lines from a continued response 
+    private List lines; 
 
     // indicates that this is a continuation response
     private boolean continued;
@@ -72,6 +78,40 @@ class SMTPReply {
             throw new MalformedSMTPReplyException("error in parsing code", e);
         }
     }
+    
+    /**
+     * Add a line to a continued response.  This will 
+     * update the continued status if the end of the 
+     * response is reached. 
+     * 
+     * @param line   The line to add.
+     */
+    public void addLine(String line) {
+        if (lines == null) {
+            lines = new ArrayList(); 
+            lines.add(message); 
+        }
+        // mark if we're still continued 
+        continued = line.charAt(3) == '-';
+        // add the line to the list 
+        lines.add(line.substring(4)); 
+    }
+    
+    /**
+     * Get the list of all of the lines associated with 
+     * this reply. 
+     * 
+     * @return A List containing all lines associated with this
+     *         reply.
+     */
+    public List getLines() {
+        if (lines == null) {
+            lines = new ArrayList(); 
+            lines.add(message); 
+        }
+        return lines;
+    }
+    
 
     /**
      * Return the code value associated with the reply.
