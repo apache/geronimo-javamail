@@ -32,7 +32,7 @@
         <dependencySet>
             <outputDirectory>/</outputDirectory>
             <unpack>true</unpack>
-            <scope>runtime</scope>
+            <scope>provided</scope>
             <excludes>
                 <exclude>org.apache.geronimo.specs:geronimo-activation_1.1_spec</exclude>
             </excludes>
