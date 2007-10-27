@@ -736,6 +736,7 @@ public class SMTPTransport extends Transport {
             // make sure the connection
             // is shut down even if quit gets an error.
             closeServerConnection();
+            super.close();
         }
     }
 
