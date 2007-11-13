@@ -1697,7 +1697,6 @@ public class SMTPTransport extends Transport {
             throw new MessagingException("no connection");
         }
         try {
-            System.out.println(">>>>>Sending data " + data + "<<<<<<");
             outputStream.write(data.getBytes());
             outputStream.write(CR);
             outputStream.write(LF);
