@@ -35,4 +35,6 @@ protocol=smtps; type=transport; class=org.apache.geronimo.javamail.transport.smt
 protocol=nntp-post; type=transport; class=org.apache.geronimo.javamail.transport.nntp.NNTPTransport; vendor=Apache Software Foundation; version=1.0
 protocol=nntp; type=store; class=org.apache.geronimo.javamail.store.nntp.NNTPStore; vendor=Apache Software Foundation; version=1.0
 protocol=pop3; type=store; class=org.apache.geronimo.javamail.store.pop3.POP3Store; vendor=Apache Software Foundation; version=1.0
+protocol=imap; type=store; class=org.apache.geronimo.javamail.store.imap.IMAPStore; vendor=Apache Software Foundation; version=1.0
+protocol=imaps; type=store; class=org.apache.geronimo.javamail.store.imap.IMAPSSLStore; vendor=Apache Software Foundation; version=1.0
 

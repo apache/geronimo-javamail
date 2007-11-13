@@ -195,7 +195,6 @@ public class NNTPTransport extends Transport {
         // instances.
         for (int i = 0; i < addresses.length; i++) {
             if (!(addresses[i] instanceof NewsAddress)) {
-                System.out.println("Illegal address is of class " + addresses[i].getClass());
                 throw new MessagingException("Illegal NewsAddress " + addresses[i]);
             }
         }

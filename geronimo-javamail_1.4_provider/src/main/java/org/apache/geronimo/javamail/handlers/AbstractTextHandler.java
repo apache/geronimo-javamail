@@ -19,10 +19,12 @@ package org.apache.geronimo.javamail.handlers;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+
 import javax.activation.DataContentHandler;
 import javax.activation.DataSource;
 
@@ -45,12 +47,12 @@ public class AbstractTextHandler implements DataContentHandler {
     }
 
     public Object getContent(DataSource ds) throws IOException {
-        // todo handle encoding
-        Reader reader = new InputStreamReader(ds.getInputStream());
+        InputStream is = ds.getInputStream(); 
+        Reader reader = new InputStreamReader(is);
         StringBuffer result = new StringBuffer(1024);
         char[] buffer = new char[32768];
         int count;
-        while ((count = reader.read(buffer)) != -1) {
+        while ((count = reader.read(buffer)) > 0) {
             result.append(buffer, 0, count);
         }
         return result.toString();
