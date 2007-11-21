@@ -17,12 +17,13 @@
  * under the License.
  */
 
-package org.apache.geronimo.javamail.store.pop3.response;
+package org.apache.geronimo.javamail.store.pop3.connection;
 
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 
 import org.apache.geronimo.javamail.store.pop3.POP3Constants;
-import org.apache.geronimo.javamail.store.pop3.POP3Response;
+
+import org.apache.geronimo.mail.util.Base64;
 
 /**
  * This class provides the basic implementation for the POP3Response.
@@ -31,15 +32,15 @@ import org.apache.geronimo.javamail.store.pop3.POP3Response;
  * @version $Rev$ $Date$
  */
 
-public class DefaultPOP3Response implements POP3Response, POP3Constants {
+public class POP3Response implements POP3Constants {
 
     private int status = ERR;
 
     private String firstLine;
 
-    private InputStream data;
+    private byte[] data;
 
-    DefaultPOP3Response(int status, String firstLine, InputStream data) {
+    POP3Response(int status, String firstLine, byte []data) {
         this.status = status;
         this.firstLine = firstLine;
         this.data = data;
@@ -48,13 +49,37 @@ public class DefaultPOP3Response implements POP3Response, POP3Constants {
     public int getStatus() {
         return status;
     }
+    
+    public byte[] getData() {
+        return data; 
+    }
 
-    public InputStream getData() {
-        return data;
+    public ByteArrayInputStream getContentStream() {
+        return new ByteArrayInputStream(data);
     }
 
     public String getFirstLine() {
         return firstLine;
     }
+    
+    public boolean isError() {
+        return status == ERR; 
+    }
+    
+    public boolean isChallenge() {
+        return status == CHALLENGE; 
+    }
+    
+    /**
+     * Decode the message portion of a continuation challenge response.
+     * 
+     * @return The byte array containing the decoded data. 
+     */
+    public byte[] decodeChallengeResponse() 
+    {
+        // the challenge response is a base64 encoded string...
+        return Base64.decode(firstLine.trim()); 
+    }
 
 }
+

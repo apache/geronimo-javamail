@@ -19,11 +19,12 @@
 
 package org.apache.geronimo.javamail.store.pop3;
 
-import java.util.Vector;
+import java.util.List;     
 
 import javax.mail.FetchProfile;
 import javax.mail.Flags;
 import javax.mail.Folder;
+import javax.mail.FolderClosedException;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.MethodNotSupportedException;
@@ -32,10 +33,8 @@ import javax.mail.Store;
 import javax.mail.URLName;
 import javax.mail.event.ConnectionEvent;
 
-import org.apache.geronimo.javamail.store.pop3.message.POP3Message;
-import org.apache.geronimo.javamail.store.pop3.message.POP3MessageFactory;
-import org.apache.geronimo.javamail.store.pop3.response.POP3ResponseFactory;
-import org.apache.geronimo.javamail.store.pop3.response.POP3StatusResponse;
+import org.apache.geronimo.javamail.store.pop3.connection.POP3Connection; 
+import org.apache.geronimo.javamail.store.pop3.connection.POP3StatusResponse; 
 
 /**
  * The POP3 implementation of the javax.mail.Folder Note that only INBOX is
@@ -50,53 +49,90 @@ import org.apache.geronimo.javamail.store.pop3.response.POP3StatusResponse;
  */
 public class POP3Folder extends Folder {
 
-    private boolean isFolderOpen = false;
+    protected boolean isFolderOpen = false;
 
-    private int mode;
+    protected int mode;
 
-    private POP3Connection pop3Con;
+    protected POP3Connection currentConnection; 
 
-    private int msgCount;
+    protected int msgCount;
 
-    private Session session;
+    private POP3Message[] messageCache; 
+    // The fully qualified name of the folder.  For a POP3 folder, this is either "" for the root or 
+    // "INPUT" for the in-basket.  It is possible to create other folders, but they will report that 
+    // they don't exist. 
+    protected String fullName;  
+    // indicates whether this folder exists or not 
+    protected boolean exists = false; 
+    // indicates the type of folder this is. 
+    protected int folderType; 
+    
+    /**
+     * Create a new folder associate with a POP3 store instance.
+     * 
+     * @param store  The owning Store.
+     * @param name   The name of the folder.  Note that POP3 stores only
+     *               have 2 real folders, the root ("") and the in-basket
+     *               ("INBOX").  It is possible to create other instances
+     *               of Folder associated with the Store, but they will
+     *               be non-functional.
+     */
+     public POP3Folder(POP3Store store, String name) {
+        super(store);
+        this.fullName = name; 
+        // if this is the input folder, this exists 
+        if (name.equalsIgnoreCase("INPUT")) {
+            exists = true; 
+        }
+        // by default, we're holding messages. 
+        folderType = Folder.HOLDS_MESSAGES; 
+    }
+    
+    
+    /**
+     * Retrieve the folder name.  This is the simple folder
+     * name at the its hiearchy level.  This can be invoked when the folder is closed.
+     * 
+     * @return The folder's name.
+     */
+	public String getName() {
+        // the name and the full name are always the same
+        return fullName; 
+	}
 
     /**
-     * Vector is synchronized so choose over the other Collection impls This is
-     * initialized on open A chache will save the expensive operation of
-     * retrieving the message again from the server.
+     * Retrieve the folder's full name (including hierarchy information).
+     * This can be invoked when the folder is closed.
+     *
+     * @return The full name value.
      */
-    private Vector msgCache;
+	public String getFullName() {
+        return fullName;
+	}
 
-    protected POP3Folder(Store store, URLName url) {
-        super(store);
-    }
-
-    protected POP3Folder(Store store, Session session, POP3Connection pop3Con) {
-        super(store);
-        this.pop3Con = pop3Con;
-        this.session = session;
-    }
-
-    public String getName() {
-        return "INBOX";
-    }
-
-    public String getFullName() {
-        return "INBOX";
-    }
-
+    
     /**
      * Never return "this" as the parent folder. Somebody not familliar with
      * POP3 may do something like while(getParent() != null) or something
      * simmilar which will result in an infinte loop
      */
     public Folder getParent() throws MessagingException {
-        throw new MethodNotSupportedException("INBOX is the root folder");
+        // the default folder returns null.  We return the default 
+        // folder 
+        return store.getDefaultFolder(); 
     }
 
+    /**
+     * Indicate whether a folder exists.  Only the root 
+     * folder and "INBOX" will ever return true. 
+     * 
+     * @return true for real POP3 folders, false for any other 
+     *         instances that have been created.
+     * @exception MessagingException
+     */
     public boolean exists() throws MessagingException {
-        // INBOX always exists at the backend
-        return true;
+        // only one folder truely exists...this might be it.
+        return exists; 
     }
 
     public Folder[] list(String pattern) throws MessagingException {
@@ -104,22 +140,44 @@ public class POP3Folder extends Folder {
     }
 
     /**
-     * No sub folders, hence there is no notion of a seperator
+     * No sub folders, hence there is no notion of a seperator.  This is always a null character. 
      */
     public char getSeparator() throws MessagingException {
-        throw new MethodNotSupportedException("Only INBOX is supported in POP3, no sub folders");
+        return '\0';
     }
 
+    /**
+     * There's no hierarchy in POP3, so the only type 
+     * is HOLDS_MESSAGES (and only one of those exists).
+     * 
+     * @return Always returns HOLDS_MESSAGES. 
+     * @exception MessagingException
+     */
     public int getType() throws MessagingException {
-        return HOLDS_MESSAGES;
+        return folderType;      
     }
 
+    /**
+     * Always returns false as any creation operation must 
+     * fail. 
+     * 
+     * @param type   The type of folder to create.  This is ignored.
+     * 
+     * @return Always returns false. 
+     * @exception MessagingException
+     */
     public boolean create(int type) throws MessagingException {
-        throw new MethodNotSupportedException("Only INBOX is supported in POP3, no sub folders");
+        return false; 
     }
 
+    /**
+     * No way to detect new messages, so always return false. 
+     * 
+     * @return Always returns false. 
+     * @exception MessagingException
+     */
     public boolean hasNewMessages() throws MessagingException {
-        throw new MethodNotSupportedException("POP3 doesn't support this operation");
+        return false; 
     }
 
     public Folder getFolder(String name) throws MessagingException {
@@ -142,13 +200,14 @@ public class POP3Folder extends Folder {
         checkClosed();
 
         try {
+            
+            // ask the store to kindly hook us up with a connection.
+            // We're going to hang on to this until we're closed, so store it in 
+            // the Folder field.  We need to make sure our mailbox is selected while 
+            // we're working things. 
+            currentConnection = ((POP3Store)store).getFolderConnection(this); 
 
-            POP3StatusResponse res = (POP3StatusResponse) POP3ResponseFactory.getStatusResponse(pop3Con
-                    .sendCommand(POP3CommandFactory.getCOMMAND_STAT()));
-
-            // I am not checking for the res == null condition as the
-            // try catch block will handle it.
-
+            POP3StatusResponse res = currentConnection.retrieveMailboxStatus();
             this.mode = mode;
             this.isFolderOpen = true;
             this.msgCount = res.getNumMessages();
@@ -156,11 +215,9 @@ public class POP3Folder extends Folder {
             // size (no of bytes) of the mail drop;
 
             // NB:  We use the actual message number to access the messages from 
-            // the cache, which is origin 1.  Vectors are origin 0, so we add one additional 
-            // element and burn the 
-            msgCache = new Vector(msgCount + 1);
-            msgCache.setSize(msgCount + 1);
-
+            // the cache, which is origin 1.  Vectors are origin 0, so we have to subtract each time 
+            // we access a messagge.  
+            messageCache = new POP3Message[msgCount]; 
         } catch (Exception e) {
             throw new MessagingException("Unable to execute STAT command", e);
         }
@@ -168,57 +225,137 @@ public class POP3Folder extends Folder {
         notifyConnectionListeners(ConnectionEvent.OPENED);
     }
 
+    /**
+     * Close a POP3 folder.
+     * 
+     * @param expunge The expunge flag (ignored for POP3).
+     * 
+     * @exception MessagingException
+     */
     public void close(boolean expunge) throws MessagingException {
         // Can only be performed on an open folder
         checkOpen();
-
         try {
-            if (mode == READ_WRITE) {
-                // find all messages marked deleted and issue DELE commands
-                POP3Message m;
-                // NB: the first element in the cache is not used.
-                for (int i = 1; i < msgCache.size(); i++) {
-                    if ((m = (POP3Message) msgCache.elementAt(i)) != null) {
-                        if (m.isSet(Flags.Flag.DELETED)) {
-                            try {
-                                pop3Con.sendCommand(POP3CommandFactory.getCOMMAND_DELE(i + 1));
-                            } catch (Exception e) {
-                                throw new MessagingException("Exception deleting message no [" + (i + 1)
-                                        + "] during close", e);
-                            }
+            // we might need to reset the connection before we 
+            // process deleted messages and send the QUIT.  The 
+            // connection knows if we need to do this. 
+            currentConnection.reset(); 
+            // clean up any messages marked for deletion 
+            expungeDeletedMessages(); 
+        } finally {
+            // cleanup the the state even if exceptions occur when deleting the 
+            // messages. 
+            cleanupFolder(false); 
+        }
+    }
+    
+    /**
+     * Mark any messages we've flagged as deleted from the 
+     * IMAP server before closing. 
+     * 
+     * @exception MessagingException
+     */
+    protected void expungeDeletedMessages() throws MessagingException {
+        if (mode == READ_WRITE) {
+            for (int i = 0; i < messageCache.length; i++) {
+                POP3Message msg = messageCache[i]; 
+                if (msg != null) {
+                    // if the deleted flag is set, go delete this 
+                    // message. NB:  We adjust the index back to an 
+                    // origin 1 value 
+                    if (msg.isSet(Flags.Flag.DELETED)) {
+                        try {
+                            currentConnection.deleteMessage(i + 1); 
+                        } catch (MessagingException e) {
+                            throw new MessagingException("Exception deleting message number " + (i + 1), e); 
                         }
                     }
                 }
             }
-
-            try {
-                pop3Con.sendCommand(POP3CommandFactory.getCOMMAND_QUIT());
-            } catch (Exception e) {
-                // doesn't really care about the response
-            }
-            // dosn't need a catch block here, but added incase something goes
-            // wrong
-            // so that the finnaly is garunteed to execute in such a case.
-        } finally {
-            try {
-                pop3Con.close();
-            } catch (Exception e) {
-                // doesn't really care about the response
-                // all we can do is to set the reference explicitly to null
-                pop3Con = null;
-            }
-
-            /*
-             * The message numbers depend on the mail drop if the connection is
-             * closed, then purge the cache
-             */
-            msgCache = null;
-            isFolderOpen = false;
-            notifyConnectionListeners(ConnectionEvent.CLOSED);
         }
+    }
+    
+    
+    /**
+     * Do folder cleanup.  This is used both for normal
+     * close operations, and adnormal closes where the
+     * server has sent us a BYE message.
+     * 
+     * @param expunge Indicates whether open messages should be expunged.
+     * @param disconnected
+     *                The disconnected flag.  If true, the server has cut
+     *                us off, which means our connection can not be returned
+     *                to the connection pool.
+     * 
+     * @exception MessagingException
+     */
+    protected void cleanupFolder(boolean disconnected) throws MessagingException {
+        messageCache = null;
+        isFolderOpen = false;
+        // if we have a connection active at the moment
+        if (currentConnection != null) {
+            // was this a forced disconnect by the server?
+            if (disconnected) {
+                currentConnection.setClosed(); 
+            }
+            else {
+                // have this close the selected mailbox 
+                currentConnection.logout();           
+            }
+            // we need to release the connection to the Store once we're closed 
+            ((POP3Store)store).releaseFolderConnection(this, currentConnection); 
+            currentConnection = null; 
+        }
+		notifyConnectionListeners(ConnectionEvent.CLOSED);
+    }
+    
+    
+    /**
+     * Obtain a connection object for a Message attached to this Folder.  This 
+     * will be the Folder's connection, which is only available if the Folder 
+     * is currently open.
+     * 
+     * @return The connection object for the Message instance to use. 
+     * @exception MessagingException
+     */
+    synchronized POP3Connection getMessageConnection() throws MessagingException {
+        // if we're not open, the messages can't communicate either
+        if (currentConnection == null) {
+            throw new FolderClosedException(this, "No Folder connections available"); 
+        }
+        // return the current Folder connection.  At this point, we'll be sharing the 
+        // connection between the Folder and the Message (and potentially, other messages).  The 
+        // command operations on the connection are synchronized so only a single command can be 
+        // issued at one time. 
+        return currentConnection; 
+    }
+    
+    
+    /**
+     * Release the connection object back to the Folder instance.  
+     * 
+     * @param connection The connection being released.
+     * 
+     * @exception MessagingException
+     */
+    void releaseMessageConnection(POP3Connection connection) throws MessagingException {
+        // This is a NOP for this folder type. 
     }
 
     public boolean isOpen() {
+        // if we're not open, we're not open 
+        if (!isFolderOpen) {
+            return false; 
+        }
+        
+        try {
+            // we might be open, but the Store has been closed.  In which case, we're not any more
+            // closing also changes the isFolderOpen flag. 
+            if (!((POP3Store)store).isConnected()) {
+                close(false); 
+            }
+        } catch (MessagingException e) {
+        }
         return isFolderOpen;
     }
 
@@ -233,7 +370,14 @@ public class POP3Folder extends Folder {
         return new Flags();
     }
 
+    /**
+     * Get the folder message count.
+     * 
+     * @return The number of messages in the folder.
+     * @exception MessagingException
+     */
     public int getMessageCount() throws MessagingException {
+        // NB: returns -1 if the folder isn't open. 
         return msgCount;
     }
 
@@ -250,15 +394,10 @@ public class POP3Folder extends Folder {
             throw new MessagingException("Invalid Message number");
         }
 
-        Message msg = null;
-        try {
-            msg = (Message) msgCache.elementAt(msgNum);
-        } catch (RuntimeException e) {
-            session.getDebugOut().println("Message not in cache");
-        }
+        Message msg = messageCache[msgNum - 1];
         if (msg == null) {
-            msg = POP3MessageFactory.createMessage(this, session, pop3Con, msgNum);
-            msgCache.setElementAt(msg, msgNum);
+            msg = new POP3Message(this, msgNum); 
+            messageCache[msgNum - 1] = (POP3Message)msg; 
         }
 
         return msg;
@@ -286,29 +425,50 @@ public class POP3Folder extends Folder {
      * The JavaMail API recommends that this method be overrident to provide a
      * meaningfull implementation.
      */
-    public void fetch(Message[] msgs, FetchProfile fp) throws MessagingException {
+    public synchronized void fetch(Message[] msgs, FetchProfile fp) throws MessagingException {
         // Can only be performed on an Open folder
         checkOpen();
         for (int i = 0; i < msgs.length; i++) {
             Message msg = msgs[i];
-            if (msg == null) {
-                msg = POP3MessageFactory.createMessage(this, session, pop3Con, i);
-            }
+            
             if (fp.contains(FetchProfile.Item.ENVELOPE)) {
-                msg = POP3MessageFactory.createMessageWithEvelope((POP3Message) msg);
+                // fetching the size and the subject will force all of the 
+                // envelope information to load 
+                msg.getHeader("Subject"); 
+                msg.getSize(); 
             }
-
             if (fp.contains(FetchProfile.Item.CONTENT_INFO)) {
-                msg = POP3MessageFactory.createMessageWithContentInfo((POP3Message) msg);
+                // force the content to load...this also fetches the header information. 
+                // C'est la vie. 
+                ((POP3Message)msg).loadContent(); 
+                msg.getSize(); 
             }
-
+            // force flag loading for this message 
             if (fp.contains(FetchProfile.Item.FLAGS)) {
-                msg = POP3MessageFactory.createMessageWithFlags((POP3Message) msg);
+                msg.getFlags(); 
             }
-
-            msgs[i] = msg;
+            
+            if (fp.getHeaderNames().length > 0) {
+                // loading any header loads all headers, so just grab the header set. 
+                msg.getHeader("Subject"); 
+            }
         }
     }
+    
+    /**
+     * Retrieve the UID for a given message.
+     * 
+     * @param msg    The message of interest.
+     * 
+     * @return The String UID value for this message.
+     * @exception MessagingException
+     */
+    public synchronized String getUID(Message msg) throws MessagingException {
+        checkOpen(); 
+        // the Message knows how to do this 
+        return ((POP3Message)msg).getUID(); 
+    }
+    
 
     /**
      * Below is a list of covinience methods that avoid repeated checking for a

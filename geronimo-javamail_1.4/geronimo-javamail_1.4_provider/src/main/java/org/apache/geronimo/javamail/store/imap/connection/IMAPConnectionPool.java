@@ -90,26 +90,19 @@ public class IMAPConnectionPool {
     protected Map capabilities; 
 
     /**
-     * Create a connection pool associated with a give IMAPStore instance.  The 
-     * connection pool manages handing out connections for both the Store and 
-     * Folder and Message usage.  
+     * Create a connection pool associated with a give IMAPStore instance.  The
+     * connection pool manages handing out connections for both the Store and
+     * Folder and Message usage.
      * 
-     * Depending on the session properties, the Store may be given a dedicated 
-     * connection, or will share connections with the Folders.  Connections may 
-     * be requested from either the Store or Folders.  Messages must request 
-     * their connections from their hosting Folder, and only one connection is 
-     * allowed per folder. 
+     * Depending on the session properties, the Store may be given a dedicated
+     * connection, or will share connections with the Folders.  Connections may
+     * be requested from either the Store or Folders.  Messages must request
+     * their connections from their hosting Folder, and only one connection is
+     * allowed per folder.
      * 
-     * @param store   The Store we're creating the pool for.
-     * @param session The Session this Store is created under.  This contains the properties
-     *                we used to tailor behavior.
-     * @param sslConnection
-     *                Indicates whether we need to start connections using an SSL connection.
-     * @param defaultPort
-     *                The default port.  Used if we receive a -1 port value on the initial
-     *                connection request.
-     * @param debug   The debug flag.  Tells us whether to wrapper connections with debug
-     *                capture streams.
+     * @param store  The Store we're creating the pool for.
+     * @param props  The property bundle that defines protocol properties
+     *               that alter the connection behavior.
      */
     public IMAPConnectionPool(IMAPStore store, ProtocolProperties props) {
         this.store = store;
