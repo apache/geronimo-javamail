@@ -18,6 +18,10 @@
  */
 
 package org.apache.geronimo.javamail.store.pop3;
+ 
+import java.io.PrintStream; 
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.mail.AuthenticationFailedException;
 import javax.mail.Folder;
@@ -25,6 +29,10 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.URLName;
+
+import org.apache.geronimo.javamail.store.pop3.connection.POP3Connection; 
+import org.apache.geronimo.javamail.store.pop3.connection.POP3ConnectionPool; 
+import org.apache.geronimo.javamail.util.ProtocolProperties;
 
 /**
  * POP3 implementation of javax.mail.Store POP protocol spec is implemented in
@@ -34,16 +42,28 @@ import javax.mail.URLName;
  */
 
 public class POP3Store extends Store {
-
-    private POP3Connection pop3Con;
-
-    protected static final int DEFAULT_MAIL_POP3_PORT = 110;
-    private boolean sslConnection;
-    private int defaultPort;
+    protected static final int DEFAULT_POP3_PORT = 110;
+    protected static final int DEFAULT_POP3_SSL_PORT = 995;
     
-    private String protocol;
+    
+    // our accessor for protocol properties and the holder of 
+    // protocol-specific information 
+    protected ProtocolProperties props; 
+    // our connection object    
+    protected POP3ConnectionPool connectionPool; 
+    // our session provided debug output stream.
+    protected PrintStream debugStream;
+    // the debug flag 
+    protected boolean debug; 
+    // the root folder 
+    protected POP3RootFolder root; 
+    // until we're connected, we're closed 
+    boolean closedForBusiness = true; 
+    protected LinkedList openFolders = new LinkedList(); 
+    
+    
     public POP3Store(Session session, URLName name) {
-        this(session, name, "pop3", DEFAULT_MAIL_POP3_PORT, false);
+        this(session, name, "pop3", DEFAULT_POP3_PORT, false);
     }
 
     /**
@@ -68,173 +88,227 @@ public class POP3Store extends Store {
      */
     protected POP3Store(Session session, URLName name, String protocol, int defaultPort, boolean sslConnection) {
         super(session, name);
-        this.protocol = protocol;
+        
+        // create the protocol property holder.  This gives an abstraction over the different 
+        // flavors of the protocol. 
+        props = new ProtocolProperties(session, protocol, sslConnection, defaultPort); 
 
-        // these are defaults based on what the superclass specifies.
-        this.sslConnection = sslConnection;
-        this.defaultPort = defaultPort;
-
-    }
-    /**
-     * @see javax.mail.Store#getDefaultFolder()
-     * 
-     * There is only INBOX supported in POP3 so the default folder is inbox
-     */
-    public Folder getDefaultFolder() throws MessagingException {
-        return getFolder("INBOX");
+        // get our debug settings
+        debugStream = session.getDebugOut();
+        debug = session.getDebug(); 
+        // the connection pool manages connections for the stores, folder, and message usage. 
+        connectionPool = new POP3ConnectionPool(this, props); 
     }
 
+
     /**
-     * @see javax.mail.Store#getFolder(java.lang.String)
+     * Return a Folder object that represents the root of the namespace for the current user.
+     *
+     * Note that in some store configurations (such as IMAP4) the root folder might
+     * not be the INBOX folder.
+     *
+     * @return the root Folder
+     * @throws MessagingException if there was a problem accessing the store
      */
-    public Folder getFolder(String name) throws MessagingException {
-
-        checkConnectionStatus();
-
-        if (!"INBOX".equalsIgnoreCase(name)) {
-            throw new MessagingException("Only INBOX is supported in POP3");
+	public Folder getDefaultFolder() throws MessagingException {
+		checkConnectionStatus();
+        // if no root yet, create a root folder instance. 
+        if (root == null) {
+            return new POP3RootFolder(this);
         }
-        return new POP3Folder(this, session, pop3Con);
-    }
+        return root;
+	}
 
     /**
-     * @see javax.mail.Store#getFolder(javax.mail.URLName)
+     * Return the Folder corresponding to the given name.
+     * The folder might not physically exist; the {@link Folder#exists()} method can be used
+     * to determine if it is real.
+     * 
+     * @param name   the name of the Folder to return
+     * 
+     * @return the corresponding folder
+     * @throws MessagingException
+     *                if there was a problem accessing the store
      */
-    public Folder getFolder(URLName url) throws MessagingException {
-        return getFolder(url.getFile());
-    }
+	public Folder getFolder(String name) throws MessagingException {
+        return getDefaultFolder().getFolder(name);
+	}
 
+    
+    /**
+     * Return the folder identified by the URLName; the URLName must refer to this Store.
+     * Implementations may use the {@link URLName#getFile()} method to determined the folder name.
+     * 
+     * @param url
+     * 
+     * @return the corresponding folder
+     * @throws MessagingException
+     *                if there was a problem accessing the store
+     */
+	public Folder getFolder(URLName url) throws MessagingException {
+        return getDefaultFolder().getFolder(url.getFile());
+	}
+
+    
     /**
      * @see javax.mail.Service#protocolConnect(java.lang.String, int,
      *      java.lang.String, java.lang.String)
      */
-    protected synchronized boolean protocolConnect(String host, int portNum, String user, String passwd)
-            throws MessagingException {
-
-        // Never store the user, passwd for security reasons
-
-        // if these values are null, no connection attempt should be made
-        if (host == null || passwd == null || user == null) {
-            return false;
+    protected synchronized boolean protocolConnect(String host, int port, String username, String password) throws MessagingException {
+        
+        if (debug) {
+            debugOut("Connecting to server " + host + ":" + port + " for user " + username);
         }
 
-        // validate port num
-        if (portNum < 1) {
-            String portstring = session.getProperty("mail.pop3.port");
-            if (portstring != null) {
+        // the connection pool handles all of the details here. 
+        if (connectionPool.protocolConnect(host, port, username, password)) 
+        {
+            // the store is now open 
+            closedForBusiness = false; 
+            return true; 
+        }
+        return false; 
+    }
+    
+    
+    protected POP3Connection getConnection() throws MessagingException {
+        return connectionPool.getConnection(); 
+    }
+    
+    protected void releaseConnection(POP3Connection connection) throws MessagingException {
+        connectionPool.releaseConnection(connection); 
+    }
+    
+    synchronized POP3Connection getFolderConnection(POP3Folder folder) throws MessagingException {
+        POP3Connection connection = connectionPool.getConnection(); 
+        openFolders.add(folder);
+        return connection; 
+    }
+    
+    synchronized void releaseFolderConnection(POP3Folder folder, POP3Connection connection) throws MessagingException {
+        openFolders.remove(folder); 
+        // a connection returned from a folder is no longer usable. Just close it and 
+        // let it drift off. 
+        connection.close(); 
+    }
+    
+    /**
+     * Close all open folders.  We have a small problem here with a race condition.  There's no safe, single
+     * synchronization point for us to block creation of new folders while we're closing.  So we make a copy of
+     * the folders list, close all of those folders, and keep repeating until we're done.
+     */
+    protected void closeOpenFolders() {
+        // we're no longer accepting additional opens.  Any folders that open after this point will get an
+        // exception trying to get a connection.
+        closedForBusiness = true;
+
+        while (true) {
+            List folders = null;
+
+            // grab our lock, copy the open folders reference, and null this out.  Once we see a null
+            // open folders ref, we're done closing.
+            synchronized(connectionPool) {
+                folders = openFolders;
+                openFolders = new LinkedList();
+            }
+
+            // null folder, we're done
+            if (folders.isEmpty()) {
+                return;
+            }
+            // now close each of the open folders.
+            for (int i = 0; i < folders.size(); i++) {
+                POP3Folder folder = (POP3Folder)folders.get(i);
                 try {
-                    portNum = Integer.parseInt(portstring);
-                } catch (NumberFormatException e) {
-                    portNum = defaultPort;
+                    folder.close(false);
+                } catch (MessagingException e) {
                 }
             }
         }
-
-        /*
-         * Obtaining a connection to the server.
-         * 
-         */
-        pop3Con = new POP3Connection(this.session, host, portNum, sslConnection, protocol);
-        try {
-            pop3Con.open();
-        } catch (Exception e) {
-            throw new MessagingException("Connection failed", e);
-        }
-
-        /*
-         * Sending the USER command with username
-         * 
-         */
-        POP3Response resUser = null;
-        try {
-            resUser = pop3Con.sendCommand(POP3CommandFactory.getCOMMAND_USER(user));
-        } catch (Exception e) {
-            throw new MessagingException("Connection failed", e);
-        }
-
-        if (POP3Constants.ERR == resUser.getStatus()) {
-
-            /*
-             * Authentication failed so sending QUIT
-             * 
-             */
-            try {
-                pop3Con.sendCommand(POP3CommandFactory.getCOMMAND_QUIT());
-            } catch (Exception e) {
-                // We don't care about the response or if any error happens
-                // just trying to comply with the spec.
-                // Most likely the server would have terminated the connection
-                // by now.
-            }
-
-            throw new AuthenticationFailedException(resUser.getFirstLine());
-        }
-
-        /*
-         * Sending the PASS command with password
-         * 
-         */
-        POP3Response resPwd = null;
-        try {
-            resPwd = pop3Con.sendCommand(POP3CommandFactory.getCOMMAND_PASS(passwd));
-        } catch (Exception e) {
-            throw new MessagingException("Connection failed", e);
-        }
-
-        if (POP3Constants.ERR == resPwd.getStatus()) {
-
-            /*
-             * Authentication failed so sending QUIT
-             * 
-             */
-            try {
-                pop3Con.sendCommand(POP3CommandFactory.getCOMMAND_QUIT());
-            } catch (Exception e) {
-                // We don't care about the response or if any error happens
-                // just trying to comply with the spec.
-                // Most likely the server would have terminated the connection
-                // by now.
-            }
-
-            throw new AuthenticationFailedException(resPwd.getFirstLine());
-        }
-
-        return true;
     }
+    
 
     /**
      * @see javax.mail.Service#isConnected()
      */
     public boolean isConnected() {
-        POP3Response res = null;
         try {
-            res = pop3Con.sendCommand(POP3CommandFactory.getCOMMAND_NOOP());
-        } catch (Exception e) {
-            return false;
+            POP3Connection connection = getConnection(); 
+            try {
+                connection.pingServer(); 
+                return true; 
+            }
+            finally {
+                releaseConnection(connection); 
+            }
+        } catch (MessagingException e) {
         }
-
-        return (POP3Constants.OK == res.getStatus());
+        return false; 
     }
 
     /**
-     * @see javax.mail.Service#close()
+     * Close the store, and any open folders associated with the 
+     * store. 
+     * 
+     * @exception MessagingException
      */
-    public void close() throws MessagingException {
-        // This is done to ensure proper event notification.
-        super.close();
-        try {
-            pop3Con.close();
-        } catch (Exception e) {
-            // A message is already set at the connection level
-            // unfortuantely there is no constructor that takes only
-            // the root exception
-            new MessagingException("", e);
+	public synchronized void close() throws MessagingException{
+        // if already closed, nothing to do. 
+        if (closedForBusiness) {
+            return; 
         }
-    }
+        
+        // close the folders first, then shut down the Store. 
+        closeOpenFolders();
+        
+        connectionPool.close(); 
+        connectionPool = null; 
 
+		// make sure we do the superclass close operation first so 
+        // notification events get broadcast properly. 
+		super.close();
+	}
+
+    /**
+     * Check the status of our connection. 
+     * 
+     * @exception MessagingException
+     */
     private void checkConnectionStatus() throws MessagingException {
         if (!this.isConnected()) {
             throw new MessagingException("Not connected ");
         }
+    }
+
+    /**
+     * Internal debug output routine.
+     *
+     * @param value  The string value to output.
+     */
+    void debugOut(String message) {
+        debugStream.println("POP3Store DEBUG: " + message);
+    }
+
+    /**
+     * Internal debugging routine for reporting exceptions.
+     *
+     * @param message A message associated with the exception context.
+     * @param e       The received exception.
+     */
+    void debugOut(String message, Throwable e) {
+        debugOut("Received exception -> " + message);
+        debugOut("Exception message -> " + e.getMessage());
+        e.printStackTrace(debugStream);
+    }
+    
+    /**
+     * Finalizer to perform IMAPStore() cleanup when 
+     * no longer in use. 
+     * 
+     * @exception Throwable
+     */
+    protected void finalize() throws Throwable {
+        super.finalize(); 
+        close(); 
     }
 }

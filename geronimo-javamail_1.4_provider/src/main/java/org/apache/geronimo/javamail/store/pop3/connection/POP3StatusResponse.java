@@ -17,11 +17,9 @@
  * under the License.
  */
 
-package org.apache.geronimo.javamail.store.pop3.response;
+package org.apache.geronimo.javamail.store.pop3.connection;
 
 import javax.mail.MessagingException;
-
-import org.apache.geronimo.javamail.store.pop3.POP3Response;
 
 /**
  * This class adds functionality to the basic response by parsing the status
@@ -33,7 +31,7 @@ import org.apache.geronimo.javamail.store.pop3.POP3Response;
  * @version $Rev$ $Date$
  */
 
-public class POP3StatusResponse extends DefaultPOP3Response {
+public class POP3StatusResponse extends POP3Response {
 
     private int numMessages = 0;
 

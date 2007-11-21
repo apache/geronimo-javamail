@@ -30,10 +30,6 @@ public interface POP3Constants {
 
     public final static String CRLF = "\r\n";
 
-    public final static int LF = '\n';
-
-    public final static int CR = '\r';
-
     public final static int DOT = '.';
 
     public final static int OK = 0;

@@ -16,27 +16,28 @@
  */
 
 
-package org.apache.geronimo.javamail.store.imap;
+package org.apache.geronimo.javamail.store.pop3;
 
 import javax.mail.Session;
 import javax.mail.URLName;
 
 /**
- * IMAP implementation of javax.mail.Store for SSL connections. 
+ * POP3 implementation of javax.mail.Store over an SSL connection.
  *
  * @version $Rev$ $Date$
  */
-public class IMAPSSLStore extends IMAPStore {
+public class POP3SSLStore extends POP3Store {
     /**
-     * Construct an IMAPSSLStore item.
+     * Construct an POP3SSLStore item.
      *
      * @param session The owning javamail Session.
      * @param urlName The Store urlName, which can contain server target information.
      */
-	public IMAPSSLStore(Session session, URLName urlName) {
+	public POP3SSLStore(Session session, URLName urlName) {
         // we're the imaps protocol, our default connection port is 993, and we must use
         // an SSL connection for the initial hookup 
-		super(session, urlName, "imaps", true, DEFAULT_IMAP_SSL_PORT);
+		super(session, urlName, "pop3s", DEFAULT_POP3_SSL_PORT, true);
 	}
 }
+
 

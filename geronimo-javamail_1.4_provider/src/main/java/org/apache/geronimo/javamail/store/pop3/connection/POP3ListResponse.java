@@ -17,13 +17,14 @@
  * under the License.
  */
 
-package org.apache.geronimo.javamail.store.pop3.response;
+package org.apache.geronimo.javamail.store.pop3.connection;
 
-import java.util.Vector;
+import java.io.ByteArrayInputStream; 
+
+import java.util.ArrayList; 
+import java.util.List;     
 
 import javax.mail.MessagingException;
-
-import org.apache.geronimo.javamail.store.pop3.POP3Response;
 
 /**
  * This class adds functionality to the basic response by parsing the reply for
@@ -37,13 +38,13 @@ import org.apache.geronimo.javamail.store.pop3.POP3Response;
  * @version $Rev$ $Date$
  */
 
-public class POP3ListResponse extends DefaultPOP3Response {
+public class POP3ListResponse extends POP3Response {
 
     private int msgnum = 0;
 
     private int size = 0;
 
-    private Vector multipleMsgs = null;
+    private List multipleMsgs = null;
 
     POP3ListResponse(POP3Response baseRes) throws MessagingException {
         super(baseRes.getStatus(), baseRes.getFirstLine(), baseRes.getData());
@@ -57,12 +58,12 @@ public class POP3ListResponse extends DefaultPOP3Response {
                 try {
                     msgnum = Integer.parseInt(args[0]);
                 } catch (NumberFormatException e) {
-                    throw new MessagingException("Invalid response for STAT command", e);
+                    throw new MessagingException("Invalid response for LIST command", e);
                 }
                 try {
                     size = Integer.parseInt(args[1]);
                 } catch (NumberFormatException e) {
-                    throw new MessagingException("Invalid response for STAT command", e);
+                    throw new MessagingException("Invalid response for LIST command", e);
                 }
             } else {
                 int totalMsgs = 0;
@@ -70,10 +71,9 @@ public class POP3ListResponse extends DefaultPOP3Response {
                 try {
                     totalMsgs = Integer.parseInt(args[0]);
                 } catch (NumberFormatException e) {
-                    throw new MessagingException("Invalid response for STAT command", e);
+                    throw new MessagingException("Invalid response for LIST command", e);
                 }
-                multipleMsgs = new Vector(totalMsgs);
-                multipleMsgs.setSize(totalMsgs);
+                multipleMsgs = new ArrayList(totalMsgs);
                 // Todo : multi-line response parsing
             }
 
@@ -92,7 +92,7 @@ public class POP3ListResponse extends DefaultPOP3Response {
      * Messages can be accessed by multipleMsgs.getElementAt(msgnum)
      * 
      */
-    public Vector getMultipleMessageDetails() {
+    public List getMultipleMessageDetails() {
         return multipleMsgs;
     }
 

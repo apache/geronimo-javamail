@@ -101,18 +101,10 @@ public class IMAPConnection extends MailConnection {
 
     /**
      * Normal constructor for an IMAPConnection() object.
-     *
-     * @param store    The store we're associated with (source of parameter values).
-     * @param host     The target host name of the IMAP server.
-     * @param port     The target listening port of the server.  Defaults to 119 if
-     *                 the port is specified as -1.
-     * @param username The login user name (can be null unless authentication is
-     *                 required).
-     * @param password Password associated with the userid account.  Can be null if
-     *                 authentication is not required.
-     * @param sslConnection
-     *                 True if this is targetted as an SSLConnection.
-     * @param debug    The session debug flag.
+     * 
+     * @param props  The protocol properties abstraction containing our
+     *               property modifiers.
+     * @param pool
      */
     public IMAPConnection(ProtocolProperties props, IMAPConnectionPool pool) {
         super(props);
