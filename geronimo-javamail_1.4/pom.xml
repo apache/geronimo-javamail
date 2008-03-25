@@ -109,14 +109,6 @@
                     <linkModules>true</linkModules>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <configuration>
-                    <tagBase>https://svn.apache.org/repos/asf/geronimo/javamail/tags</tagBase>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
