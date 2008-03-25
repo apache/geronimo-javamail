@@ -152,7 +152,7 @@
 
     <properties>
         <siteId>javamail</siteId>
-        <projectName>Apache Geronimo Javamail Bundle</projectName>
+        <projectName>Apache Geronimo Javamail Provider</projectName>
     </properties>
 
     <profiles>
