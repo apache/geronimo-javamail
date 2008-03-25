@@ -142,12 +142,18 @@
         </repository>
     </repositories>
 
+    <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
     <distributionManagement>
         <site>
             <id>geronimo-website</id>
-            <url>scp://people.apache.org/www/geronimo.apache.org/maven/javamail</url>
+            <url>${staging.siteURL}/${siteId}/${version}</url>
         </site>
     </distributionManagement>
+
+    <properties>
+        <siteId>javamail</siteId>
+        <projectName>Apache Geronimo Javamail Bundle</projectName>
+    </properties>
 
     <profiles>
         <profile>
