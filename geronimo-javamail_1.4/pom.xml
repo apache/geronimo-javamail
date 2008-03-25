@@ -47,6 +47,19 @@
         <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/geronimo-javamail_1.4</url>
     </scm>
 
+    <properties>
+        <siteId>javamail</siteId>
+        <projectName>Apache Geronimo Javamail Bundle</projectName>
+    </properties>
+
+    <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
+    <distributionManagement>
+        <site>
+            <id>geronimo-website</id>
+            <url>${staging.siteURL}/${siteId}/${version}</url>
+        </site>
+    </distributionManagement>
+
     <dependencyManagement>
         <dependencies>
 
@@ -134,32 +147,9 @@
         </repository>
     </repositories>
 
-    <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
-    <distributionManagement>
-        <site>
-            <id>geronimo-website</id>
-            <url>${staging.siteURL}/${siteId}/${version}</url>
-        </site>
-    </distributionManagement>
-
-    <properties>
-        <siteId>javamail</siteId>
-        <projectName>Apache Geronimo Javamail Bundle</projectName>
-    </properties>
-
-    <profiles>
-        <profile>
-            <id>default</id>
-
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-
-            <modules>
-                <module>geronimo-javamail_1.4_provider</module>
-                <module>geronimo-javamail_1.4_mail</module>
-            </modules>
-        </profile>
-    </profiles>
+    <modules>
+        <module>geronimo-javamail_1.4_provider</module>
+        <module>geronimo-javamail_1.4_mail</module>
+    </modules>
 
 </project>
