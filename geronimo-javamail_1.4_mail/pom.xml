@@ -33,7 +33,7 @@
 
     <artifactId>geronimo-javamail_1.4_mail</artifactId>
     <name>Geronimo JavaMail :: 1.4 Mail</name>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
 
     <dependencies>
 
