@@ -28,26 +28,21 @@
         <groupId>org.apache.geronimo.javamail</groupId>
         <artifactId>geronimo-javamail_1.4</artifactId>
         <version>1.4-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>geronimo-javamail_1.4_mail</artifactId>
-    <name>Geronimo JavaMail :: 1.4 Mail</name>
-    <packaging>jar</packaging>
+    <name>Geronimo JavaMail 1.4 :: Mail</name>
 
     <dependencies>
-
         <dependency>
             <groupId>org.apache.geronimo.javamail</groupId>
             <artifactId>geronimo-javamail_1.4_provider</artifactId>
-            <version>${pom.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-javamail_1.4_spec</artifactId>
         </dependency>
-
     </dependencies>
 
     <build>
