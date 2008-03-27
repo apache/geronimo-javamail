@@ -90,6 +90,16 @@
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>1.0.1</version>
                 </plugin>
+                
+                <!--
+                HACK: Force the use of 2.4, since 2.3 causes the release profile to fail for this project.
+                      Upgrading here to avoid needing to wait for another Genesis release.
+                -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.4</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
