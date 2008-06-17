@@ -67,24 +67,15 @@ public class TraceInputStream extends FilterInputStream {
     }
 
     /**
-     * Reads up to <code>len</code> bytes of data from this input stream into
-     * an array of bytes. This method blocks until some input is available.
-     * <p>
-     * This method simply performs <code>in.read(b, off, len)</code> and
-     * returns the result.
+     * Reads up to len bytes of data from this input stream, placing them directly 
+     * into the provided byte array. 
      * 
-     * @param b
-     *            the buffer into which the data is read.
-     * @param off
-     *            the start offset of the data.
-     * @param len
-     *            the maximum number of bytes read.
-     * @return the total number of bytes read into the buffer, or
-     *         <code>-1</code> if there is no more data because the end of the
-     *         stream has been reached.
-     * @exception IOException
-     *                if an I/O error occurs.
-     * @see java.io.FilterInputStream#in
+     * @param b   the provided data buffer. 
+     * @param off the starting offset within the buffer for placing the data. 
+     * @param len the maximum number of bytes to read. 
+     * @return    that number of bytes that have been read and copied into the 
+     *            buffer or -1 if an end of stream occurs. 
+     * @exception IOException for any I/O errors. 
      */
     public int read(byte b[], int off, int len) throws IOException {
         int count = in.read(b, off, len);
@@ -95,21 +86,11 @@ public class TraceInputStream extends FilterInputStream {
     }
 
     /**
-     * Reads the next byte of data from this input stream. The value byte is
-     * returned as an <code>int</code> in the range <code>0</code> to
-     * <code>255</code>. If no byte is available because the end of the
-     * stream has been reached, the value <code>-1</code> is returned. This
-     * method blocks until input data is available, the end of the stream is
-     * detected, or an exception is thrown.
-     * <p>
-     * This method simply performs <code>in.read()</code> and returns the
-     * result.
+     * Read the next byte of data from the input stream, returning it as an 
+     * int value.  Returns -1 if the end of stream is detected. 
      * 
-     * @return the next byte of data, or <code>-1</code> if the end of the
-     *         stream is reached.
-     * @exception IOException
-     *                if an I/O error occurs.
-     * @see java.io.FilterInputStream#in
+     * @return The next byte of data or -1 to indicate end-of-stream.      
+     * @exception IOException for any I/O errors
      */
     public int read() throws IOException {
         int b = in.read();
