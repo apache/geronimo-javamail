@@ -67,18 +67,12 @@ public class TraceOutputStream extends FilterOutputStream {
 
 
     /**
-     * Writes the specified <code>byte</code> to this output stream.
-     * <p>
-     * The <code>write</code> method of <code>FilterOutputStream</code>
-     * calls the <code>write</code> method of its underlying output stream,
-     * that is, it performs <tt>out.write(b)</tt>.
-     * <p>
-     * Implements the abstract <tt>write</tt> method of <tt>OutputStream</tt>.
-     *
-     * @param b
-     *            the <code>byte</code>.
+     * Write a single byte to the output stream.
+     * 
+     * @param b      The byte to be written.
+     * 
      * @exception IOException
-     *                if an I/O error occurs.
+     *                   thrown for any I/O errors.
      */
     public void write(int b) throws IOException {
         if (debug) {
