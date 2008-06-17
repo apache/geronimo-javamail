@@ -45,6 +45,8 @@ import javax.mail.URLName;
 import javax.mail.event.TransportEvent;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;     
+import javax.mail.internet.MimePart;     
 import javax.net.ssl.SSLSocket;
 
 import org.apache.geronimo.javamail.authentication.ClientAuthenticator;
@@ -137,6 +139,8 @@ public class SMTPTransport extends Transport {
     protected static final String MAIL_SMTP_EHLO = "ehlo";
 
     protected static final String MAIL_SMTP_ENCODE_TRACE = "encodetrace";
+    
+    protected static final String MAIL_SMTP_ALLOW8BITMIME = "allow8bitmime";
 
     protected static final int MIN_MILLIS = 1000 * 60;
 
@@ -242,6 +246,9 @@ public class SMTPTransport extends Transport {
     // is TLS enabled on our part?
     protected boolean useTLS = false;
 
+    // should we use 8BITMIME encoding if supported by the server?
+    protected boolean use8bit = false; 
+
     // do we use SSL for our initial connection?
     protected boolean sslConnection = false;
 
@@ -306,6 +313,8 @@ public class SMTPTransport extends Transport {
         reportSuccess = isProtocolPropertyTrue(MAIL_SMTP_REPORT_SUCCESS);
         // and also check for TLS enablement.
         useTLS = isProtocolPropertyTrue(MAIL_SMTP_STARTTLS_ENABLE);
+        // and also check for TLS enablement.
+        use8bit = isProtocolPropertyTrue(MAIL_SMTP_ALLOW8BITMIME);
 
         // get our debug output.
         debugStream = session.getDebugOut();
@@ -469,6 +478,23 @@ public class SMTPTransport extends Transport {
         Address[] sent = null;
         Address[] unsent = null;
         Address[] invalid = null;
+        
+        // If the server supports the 8BITMIME extension, we might need to change the 
+        // transfer encoding for the content to allow for direct transmission of the 
+        // 8-bit codes. 
+        if (supportsExtension("8BITMIME")) {
+            // we only do this if the capability was enabled via a property option or 
+            // by explicitly setting the property on the message object. 
+            if (use8bit || (message instanceof SMTPMessage && ((SMTPMessage)message).getAllow8bitMIME())) {
+                // go check the content and see if the can convert the transfer encoding to 
+                // allow direct 8-bit transmission. 
+                if (convertTransferEncoding((MimeMessage)message)) {
+                    // if we changed the encoding on any of the parts, then we 
+                    // need to save the message again 
+                    message.saveChanges(); 
+                }
+            }
+        }
 
         try {
             // send sender first. If this failed, send a failure notice of the
@@ -2361,5 +2387,120 @@ public class SMTPTransport extends Transport {
         debugOut("Received exception -> " + message);
         debugOut("Exception message -> " + e.getMessage());
         e.printStackTrace(debugStream);
+    }
+    
+    
+    /**
+     * Check to see if a MIME body part can have its 
+     * encoding changed from quoted-printable or base64
+     * encoding to 8bit encoding.  In order for this 
+     * to work, it must follow the rules laid out in 
+     * RFC 2045.  To qualify for conversion, the text 
+     * must be: 
+     * 
+     * 1)  No more than 998 bytes long 
+     * 2)  All lines are terminated with CRLF sequences
+     * 3)  CR and LF characters only occur in properly 
+     * formed line separators 
+     * 4)  No null characters are allowed. 
+     * 
+     * The conversion will only be applied to text 
+     * elements, and this will recurse through the 
+     * different elements of MultiPart content. 
+     * 
+     * @param bodyPart The bodyPart to convert. Initially, this will be
+     *                 the message itself.
+     * 
+     * @return true if any conversion was performed, false if 
+     *         nothing was converted.
+     */
+    protected boolean convertTransferEncoding(MimePart bodyPart)
+    {
+        boolean converted = false; 
+        try {
+            // if this is a multipart element, apply the conversion rules 
+            // to each of the parts. 
+            if (bodyPart.isMimeType("multipart/")) {
+                MimeMultipart parts = (MimeMultipart)bodyPart.getContent(); 
+                for (int i = 0; i < parts.getCount(); i++) {
+                    // convert each body part, and accumulate the conversion result 
+                    converted = converted && convertTransferEncoding((MimePart)parts.getBodyPart(i)); 
+                }
+            }
+            else {
+                // we only do this if the encoding is quoted-printable or base64
+                String encoding =  bodyPart.getEncoding(); 
+                if (encoding != null) {
+                    encoding = encoding.toLowerCase(); 
+                    if (encoding.equals("quoted-printable") || encoding.equals("base64")) {
+                        // this requires encoding.  Read the actual content to see if 
+                        // it conforms to the 8bit encoding rules. 
+                        if (isValid8bit(bodyPart.getInputStream())) {
+                            // it's valid, so change the transfer encoding to just 
+                            // pass the data through.  
+                            bodyPart.setHeader("Content-Transfer-Encoding", "8bit"); 
+                            converted = true;   // we've changed something
+                        }
+                    }
+                }
+            }
+        } catch (MessagingException e) {
+        } catch (IOException e) {
+        }
+        return converted; 
+    }
+    
+    
+    /**
+     * Read the bytes in a stream a test to see if this 
+     * conforms to the RFC 2045 rules for 8bit encoding. 
+     * 
+     * 1)  No more than 998 bytes long 
+     * 2)  All lines are terminated with CRLF sequences
+     * 3)  CR and LF characters only occur in properly 
+     * formed line separators 
+     * 4)  No null characters are allowed. 
+     * 
+     * @param inStream The source input stream.
+     * 
+     * @return true if this can be transmitted successfully 
+     *         using 8bit encoding, false if an alternate encoding
+     *         will be required.
+     */
+    protected boolean isValid8bit(InputStream inStream) { 
+        try {
+            int ch;  
+            int lineLength = 0; 
+            while ((ch = inStream.read()) >= 0) {
+                // nulls are decidedly not allowed 
+                if (ch == 0) {
+                    return false; 
+                }
+                // start of a CRLF sequence (potentially) 
+                else if (ch == '\r') {
+                    // check the next character.  There must be one, 
+                    // and it must be a LF for this to be value 
+                    ch = inStream.read(); 
+                    if (ch != '\n') {
+                        return false; 
+                    }
+                    // reset the line length 
+                    lineLength = 0; 
+                }
+                else {
+                    // a normal character 
+                    lineLength++; 
+                    // make sure the line is not too long 
+                    if (lineLength > 998) {
+                        return false; 
+                    }
+                }
+                
+            }
+        } catch (IOException e) {
+            return false;  // can't read this, don't try passing it 
+        }
+        // this converted ok 
+        return true; 
     }
 }
