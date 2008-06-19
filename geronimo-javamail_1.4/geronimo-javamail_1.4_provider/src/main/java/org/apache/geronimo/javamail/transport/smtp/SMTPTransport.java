@@ -479,6 +479,8 @@ public class SMTPTransport extends Transport {
         Address[] unsent = null;
         Address[] invalid = null;
         
+        boolean sendAs8bit = false; 
+        
         // If the server supports the 8BITMIME extension, we might need to change the 
         // transfer encoding for the content to allow for direct transmission of the 
         // 8-bit codes. 
@@ -486,6 +488,8 @@ public class SMTPTransport extends Transport {
             // we only do this if the capability was enabled via a property option or 
             // by explicitly setting the property on the message object. 
             if (use8bit || (message instanceof SMTPMessage && ((SMTPMessage)message).getAllow8bitMIME())) {
+                // make sure we add the BODY= option to the FROM message. 
+                sendAs8bit = true; 
                 // go check the content and see if the can convert the transfer encoding to 
                 // allow direct 8-bit transmission. 
                 if (convertTransferEncoding((MimeMessage)message)) {
@@ -500,7 +504,7 @@ public class SMTPTransport extends Transport {
             // send sender first. If this failed, send a failure notice of the
             // event, using the full list of
             // addresses as the unsent, and nothing for the rest.
-            if (!sendMailFrom(message)) {
+            if (!sendMailFrom(message, sendAs8bit)) {
                 unsent = addresses;
                 sent = new Address[0];
                 invalid = new Address[0];
@@ -1557,13 +1561,17 @@ public class SMTPTransport extends Transport {
 
     /**
      * Set the sender for this mail.
-     *
+     * 
      * @param message
-     *            The message we're sending.
-     *
+     *                   The message we're sending.
+     * @param sendAs8bit Indicates we're going to transmit the message body
+     *                   as 8BITMIME, so add the BODY= option to the FROM
+     *                   message.
+     * 
+     * @return True if the command was accepted, false otherwise. 
      * @exception MessagingException
      */
-    protected boolean sendMailFrom(Message message) throws MessagingException {
+    protected boolean sendMailFrom(Message message, boolean sendAs8bit) throws MessagingException {
 
         // need to sort the from value out from a variety of sources.
         String from = null;
@@ -1606,8 +1614,13 @@ public class SMTPTransport extends Transport {
         StringBuffer command = new StringBuffer();
 
         // start building up the command
+        if (sendAs8bit) {
+        }
         command.append("MAIL FROM: ");
         command.append(fixEmailAddress(from));
+        if (sendAs8bit) {
+            command.append(" BODY=8BITMIME"); 
+        }
 
         // does this server support Delivery Status Notification? Then we may
         // need to add some extra to the command.
