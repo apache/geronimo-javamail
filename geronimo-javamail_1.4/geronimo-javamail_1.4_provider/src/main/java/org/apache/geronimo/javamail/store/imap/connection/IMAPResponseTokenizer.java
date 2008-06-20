@@ -811,7 +811,6 @@ public class IMAPResponseTokenizer {
         int type = token.getType();
 
         if (type != Token.ATOM) {
-            Thread.currentThread().dumpStack(); 
             throw new ResponseFormatException("ATOM token expected in response: " + token.getValue());
         }
         return token.getValue();
