@@ -35,5 +35,6 @@ public class TextHtmlTest extends AbstractHandler {
         super.setUp();
         
         dch = new TextHtmlHandler();
+        mimeType = "text/html"; 
     }
 }

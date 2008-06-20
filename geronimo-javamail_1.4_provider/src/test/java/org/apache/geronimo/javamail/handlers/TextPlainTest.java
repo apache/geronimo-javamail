@@ -35,5 +35,6 @@ public class TextPlainTest extends AbstractHandler {
         super.setUp();
         
         dch = new TextPlainHandler();
+        mimeType = "text/plain"; 
     }
 }
