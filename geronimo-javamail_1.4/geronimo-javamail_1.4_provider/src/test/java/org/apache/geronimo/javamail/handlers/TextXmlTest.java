@@ -35,5 +35,6 @@ public class TextXmlTest extends AbstractHandler {
         super.setUp();
         
         dch = new TextXmlHandler();
+        mimeType = "text/xml"; 
     }
 }

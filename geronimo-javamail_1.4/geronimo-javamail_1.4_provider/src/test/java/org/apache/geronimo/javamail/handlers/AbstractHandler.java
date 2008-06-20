@@ -44,7 +44,7 @@ public abstract class AbstractHandler extends TestCase {
             }
 
             public String getContentType() {
-                throw new UnsupportedOperationException();
+                return mimeType; 
             }
 
             public String getName() {

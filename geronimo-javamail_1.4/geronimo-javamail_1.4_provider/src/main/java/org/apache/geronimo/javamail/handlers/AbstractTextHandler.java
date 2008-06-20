@@ -24,9 +24,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 
 import javax.activation.DataContentHandler;
 import javax.activation.DataSource;
+
+import javax.mail.internet.ContentType; 
+import javax.mail.internet.MimeUtility;
 
 /**
  * @version $Rev$ $Date$
@@ -46,9 +50,26 @@ public class AbstractTextHandler implements DataContentHandler {
         return flavour.equals(dataFlavor) ? getContent(dataSource) : null;
     }
 
+    /**
+     * Read the content from the DataSource and transform 
+     * it into a text object (String). 
+     * 
+     * @param ds     The source DataSource.
+     * 
+     * @return The content object. 
+     * @exception IOException
+     */
     public Object getContent(DataSource ds) throws IOException {
         InputStream is = ds.getInputStream(); 
-        Reader reader = new InputStreamReader(is);
+        InputStreamReader reader;
+        // process any encoding to make sure the chars get transformed into the 
+        // correct byte types. 
+        try {
+            String charset = getCharSet(ds.getContentType());
+            reader = new InputStreamReader(is, charset);
+        } catch (Exception ex) {
+            throw new UnsupportedEncodingException(ex.toString());
+        }
         StringBuffer result = new StringBuffer(1024);
         char[] buffer = new char[32768];
         int count;
@@ -58,7 +79,21 @@ public class AbstractTextHandler implements DataContentHandler {
         return result.toString();
     }
 
-    public void writeTo(Object o, String mimeType, OutputStream os) throws IOException {
+    
+    /**
+     * Write an object of "our" type out to the provided 
+     * output stream.  The content type might modify the 
+     * result based on the content type parameters. 
+     * 
+     * @param object The object to write.
+     * @param contentType
+     *               The content mime type, including parameters.
+     * @param outputstream
+     *               The target output stream.
+     * 
+     * @throws IOException
+     */
+    public void writeTo(Object o, String contentType, OutputStream outputstream) throws IOException {
         String s;
         if (o instanceof String) {
             s = (String) o;
@@ -67,9 +102,33 @@ public class AbstractTextHandler implements DataContentHandler {
         } else {
             return;
         }
-        // todo handle encoding
-        OutputStreamWriter writer = new OutputStreamWriter(os);
+        // process any encoding to make sure the chars get transformed into the 
+        // correct byte types. 
+        OutputStreamWriter writer;
+        try {
+            String charset = getCharSet(contentType);
+            writer = new OutputStreamWriter(outputstream, charset);
+        } catch (Exception ex) {
+            ex.printStackTrace(); 
+            throw new UnsupportedEncodingException(ex.toString());
+        }
         writer.write(s);
         writer.flush();
+    }
+    
+
+    /**
+     * get the character set from content type
+     * @param contentType
+     * @return
+     * @throws ParseException
+     */
+    protected String getCharSet(String contentType) throws Exception {
+        ContentType type = new ContentType(contentType);
+        String charset = type.getParameter("charset");
+        if (charset == null) {
+            charset = "us-ascii";
+        }
+        return MimeUtility.javaCharset(charset);
     }
 }
