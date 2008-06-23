@@ -96,4 +96,37 @@ public class MIMEOutputStream extends OutputStream {
         // remember this last one for CRLF tracking purposes.
         lastWrite = ch;
     }
+    
+    
+    /**
+     * Force the stream to be terminated at a line break. 
+     * This is generally in preparation for the transport to 
+     * write out an end-of-data marker, which generally 
+     * needs to be preceded by a CRLF sequence. 
+     * 
+     * @exception IOException
+     */
+    public void forceTerminatingLineBreak() throws IOException {
+        if (!atLineBreak) {
+            out.write((byte) '\r');
+            out.write((byte) '\n');
+            // we've just taken a break;
+            atLineBreak = true;
+        }
+    }
+    
+    
+    /**
+     * Write out the SMTP terminator to the output stream. 
+     * This ensures that we don't write out an extra 
+     * CRLF if the data terminates with that value.  
+     * 
+     * @exception IOException
+     */
+    public void writeSMTPTerminator() throws IOException {
+        forceTerminatingLineBreak(); 
+        out.write('.'); 
+        out.write('\r'); 
+        out.write('\n'); 
+    }
 }
