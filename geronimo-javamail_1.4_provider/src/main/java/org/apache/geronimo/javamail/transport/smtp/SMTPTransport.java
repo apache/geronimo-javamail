@@ -1438,19 +1438,19 @@ public class SMTPTransport extends Transport {
             // The MIME output stream performs those two functions on behalf of
             // the content
             // writer.
-            OutputStream mimeOut = new MIMEOutputStream(outputStream);
+            MIMEOutputStream mimeOut = new MIMEOutputStream(outputStream);
 
             msg.writeTo(mimeOut);
-            mimeOut.flush();
+
+            // now to finish, we send a CRLF sequence, followed by a ".".
+            mimeOut.writeSMTPTerminator();           
+            // and flush the data to send it along 
+            mimeOut.flush();   
         } catch (IOException e) {
             throw new MessagingException(e.toString());
         } catch (MessagingException e) {
             throw new MessagingException(e.toString());
         }
-
-        // now to finish, we send a CRLF sequence, followed by a ".".
-        sendLine("");
-        sendLine(".");
 
         // use a longer time out here to give the server time to process the
         // data.
