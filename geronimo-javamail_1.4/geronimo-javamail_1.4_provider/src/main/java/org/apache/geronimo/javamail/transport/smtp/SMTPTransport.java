@@ -318,6 +318,7 @@ public class SMTPTransport extends Transport {
 
         // get our debug output.
         debugStream = session.getDebugOut();
+        debug = true; 
     }
 
     /**
@@ -369,6 +370,7 @@ public class SMTPTransport extends Transport {
         // information and retry the
         // connection one time.
         if (mustAuthenticate && (username == null || password == null)) {
+            debugOut("Failing connection for missing authentication information");
             return false;
         }
 
@@ -396,27 +398,26 @@ public class SMTPTransport extends Transport {
 
             // receive welcoming message
             if (!getWelcome()) {
+                debugOut("Error getting welcome message"); 
                 throw new MessagingException("Error in getting welcome msg");
             }
 
             // say hello
             if (!sendHandshake()) {
+                debugOut("Error getting processing handshake message"); 
                 throw new MessagingException("Error in saying EHLO to server");
             }
 
             // authenticate with the server, if necessary
             if (!processAuthentication()) {
-                if (debug) {
-                    debugOut("User authentication failure");
-                }
+                debugOut("User authentication failure");
                 throw new AuthenticationFailedException("Error authenticating with server");
             }
         } catch (IOException e) {
-            if (debug) {
-                debugOut("I/O exception establishing connection", e);
-            }
+            debugOut("I/O exception establishing connection", e);
             throw new MessagingException("Connection error", e);
         }
+        debugOut("Successful connection"); 
         return true;
     }
 
@@ -897,7 +898,7 @@ public class SMTPTransport extends Transport {
         // now set up the input/output streams.
         inputStream = new TraceInputStream(socket.getInputStream(), debugStream, debug,
                 isProtocolPropertyTrue(MAIL_SMTP_ENCODE_TRACE));
-        ;
+         
         outputStream = new TraceOutputStream(socket.getOutputStream(), debugStream, debug,
                 isProtocolPropertyTrue(MAIL_SMTP_ENCODE_TRACE));
     }
@@ -1074,7 +1075,7 @@ public class SMTPTransport extends Transport {
         // construct the full property name
         // using the protocol (either "smtp" or "smtps").
         String fullName = "mail." + protocol + "." + name;
-        return isSessionPropertyTrue(fullName);
+        return isSessionPropertyFalse(fullName);
     }
 
     /**
@@ -1170,9 +1171,7 @@ public class SMTPTransport extends Transport {
                 // back to a default. This behavior
                 // is controlled by (surprise) more session properties.
                 if (isProtocolPropertyTrue(MAIL_SMTP_FACTORY_FALLBACK)) {
-                    if (debug) {
-                        debugOut("First plain socket attempt faile, falling back to default factory", e);
-                    }
+                    debugOut("First plain socket attempt faile, falling back to default factory", e);
                     socket = new Socket(host, port, localAddress, localPort);
                 }
                 // we have an exception. We're going to throw an IOException,
@@ -1185,10 +1184,7 @@ public class SMTPTransport extends Transport {
                         e = ((InvocationTargetException) e).getTargetException();
                     }
 
-                    if (debug) {
-                        debugOut("Plain socket creation failure", e);
-                    }
-
+                    debugOut("Plain socket creation failure", e);
                     // throw this as an IOException, with the original exception
                     // attached.
                     IOException ioe = new IOException("Error connecting to " + host + ", " + port);
@@ -1295,9 +1291,7 @@ public class SMTPTransport extends Transport {
                     // factory and try this again. We only
                     // allow this to happen once.
                     if (fallback) {
-                        if (debug) {
-                            debugOut("First attempt at creating SSL socket failed, falling back to default factory");
-                        }
+                        debugOut("First attempt at creating SSL socket failed, falling back to default factory");
                         socketFactory = "javax.net.ssl.SSLSocketFactory";
                         fallback = false;
                         continue;
@@ -1312,9 +1306,7 @@ public class SMTPTransport extends Transport {
                             e = ((InvocationTargetException) e).getTargetException();
                         }
 
-                        if (debug) {
-                            debugOut("Failure creating SSL socket", e);
-                        }
+                        debugOut("Failure creating SSL socket", e);
 
                         // throw this as an IOException, with the original
                         // exception attached.
@@ -1401,9 +1393,7 @@ public class SMTPTransport extends Transport {
             socket = sslSocket;
 
         } catch (Exception e) {
-            if (debug) {
-                debugOut("Failure attempting to convert connection to TLS", e);
-            }
+            debugOut("Failure attempting to convert connection to TLS", e);
             throw new MessagingException("Unable to convert connection to SSL", e);
         }
     }
@@ -1868,7 +1858,6 @@ public class SMTPTransport extends Transport {
     protected boolean sendHandshake() throws MessagingException {
         // check to see what sort of initial handshake we need to make.
         boolean useEhlo = !isProtocolPropertyFalse(MAIL_SMTP_EHLO);
-
         // if we're to use Ehlo, send it and then fall back to just a HELO
         // message if it fails.
         if (useEhlo) {
@@ -2070,6 +2059,7 @@ public class SMTPTransport extends Transport {
      *            "NAME arguments").
      */
     protected void processExtension(String extension) {
+        debugOut("Processing extension " + extension); 
         String extensionName = extension.toUpperCase();
         String argument = "";
 
@@ -2080,7 +2070,7 @@ public class SMTPTransport extends Transport {
             extensionName = extension.substring(0, delimiter).toUpperCase();
             argument = extension.substring(delimiter + 1);
         }
-
+        
         // add this to the map so it can be tested later.
         serverExtensionArgs.put(extensionName, argument);
 
@@ -2241,9 +2231,7 @@ public class SMTPTransport extends Transport {
             // if we get a completion return, we've passed muster, so give an
             // authentication response.
             if (line.getCode() == AUTHENTICATION_COMPLETE) {
-                if (debug) {
-                    debugOut("Successful SMTP authentication");
-                }
+                debugOut("Successful SMTP authentication");
                 return true;
             }
             // we have an additional challenge to process.
@@ -2385,7 +2373,9 @@ public class SMTPTransport extends Transport {
      *            The string value to output.
      */
     protected void debugOut(String message) {
-        debugStream.println("SMTPTransport DEBUG: " + message);
+        if (debug) {
+            debugStream.println("SMTPTransport DEBUG: " + message);
+        }
     }
 
     /**
@@ -2397,9 +2387,11 @@ public class SMTPTransport extends Transport {
      *            The received exception.
      */
     protected void debugOut(String message, Throwable e) {
-        debugOut("Received exception -> " + message);
-        debugOut("Exception message -> " + e.getMessage());
-        e.printStackTrace(debugStream);
+        if (debug) {
+            debugOut("Received exception -> " + message);
+            debugOut("Exception message -> " + e.getMessage());
+            e.printStackTrace(debugStream);
+        }
     }
     
     
@@ -2449,6 +2441,19 @@ public class SMTPTransport extends Transport {
                         // this requires encoding.  Read the actual content to see if 
                         // it conforms to the 8bit encoding rules. 
                         if (isValid8bit(bodyPart.getInputStream())) {
+                            // There's a huge hidden gotcha lurking under the covers here. 
+                            // If the content just exists as an encoded byte array, then just 
+                            // switching the transfer encoding will mess things up because the 
+                            // already encoded data gets transmitted in encoded form, but with 
+                            // and 8bit encoding style.  As a result, it doesn't get unencoded on 
+                            // the receiving end.  This is a nasty problem to debug.  
+                            //
+                            // The solution is to get the content as it's object type, set it back 
+                            // on the the message in raw form.  Requesting the content will apply the 
+                            // current transfer encoding value to the data.  Once we have set the 
+                            // content value back, we can reset the transfer encoding. 
+                            bodyPart.setContent(bodyPart.getContent(), bodyPart.getContentType()); 
+                            
                             // it's valid, so change the transfer encoding to just 
                             // pass the data through.  
                             bodyPart.setHeader("Content-Transfer-Encoding", "8bit"); 
