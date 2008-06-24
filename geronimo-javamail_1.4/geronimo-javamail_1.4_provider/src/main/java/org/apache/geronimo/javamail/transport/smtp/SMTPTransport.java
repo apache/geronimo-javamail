@@ -319,7 +319,6 @@ public class SMTPTransport extends Transport {
 
         // get our debug output.
         debugStream = session.getDebugOut();
-        debug = true; 
     }
 
     /**
