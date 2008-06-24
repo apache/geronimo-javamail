@@ -54,6 +54,7 @@ import org.apache.geronimo.javamail.authentication.CramMD5Authenticator;
 import org.apache.geronimo.javamail.authentication.DigestMD5Authenticator;
 import org.apache.geronimo.javamail.authentication.LoginAuthenticator;
 import org.apache.geronimo.javamail.authentication.PlainAuthenticator;
+import org.apache.geronimo.javamail.util.CountingOutputStream;
 import org.apache.geronimo.javamail.util.MIMEOutputStream;
 import org.apache.geronimo.javamail.util.TraceInputStream;
 import org.apache.geronimo.javamail.util.TraceOutputStream;
@@ -1407,6 +1408,53 @@ public class SMTPTransport extends Transport {
         // response information
         return !line.isError();
     }
+    
+    /**
+     * Get an estimate of the transmission size for this 
+     * message.  This size is the complete message as it is 
+     * encoded and transmitted on the DATA command, not counting 
+     * the terminating ".CRLF". 
+     * 
+     * @param msg    The message we're sending.
+     * 
+     * @return The count of bytes, if it can be calculated. 
+     */
+    protected int getSizeEstimate(Message msg) {
+        // now the data... I could look at the type, but
+        try {
+            CountingOutputStream outputStream = new CountingOutputStream(); 
+            
+            // the data content has two requirements we need to meet by
+            // filtering the
+            // output stream. Requirement 1 is to conicalize any line breaks.
+            // All line
+            // breaks will be transformed into properly formed CRLF sequences.
+            //
+            // Requirement 2 is to perform byte-stuff for any line that begins
+            // with a "."
+            // so that data is not confused with the end-of-data marker (a
+            // "\r\n.\r\n" sequence.
+            //
+            // The MIME output stream performs those two functions on behalf of
+            // the content
+            // writer.
+            MIMEOutputStream mimeOut = new MIMEOutputStream(outputStream);
+
+            msg.writeTo(mimeOut);
+
+            // now to finish, we make sure there's a line break at the end.  
+            mimeOut.forceTerminatingLineBreak();   
+            // and flush the data to send it along 
+            mimeOut.flush();   
+            
+            return outputStream.getCount();   
+        } catch (IOException e) {
+            return 0;     // can't get an estimate 
+        } catch (MessagingException e) {
+            return 0;     // can't get an estimate 
+        }
+    }
+    
 
     /**
      * Sends the data in the message down the socket. This presumes the server
@@ -1604,12 +1652,18 @@ public class SMTPTransport extends Transport {
         StringBuffer command = new StringBuffer();
 
         // start building up the command
-        if (sendAs8bit) {
-        }
         command.append("MAIL FROM: ");
         command.append(fixEmailAddress(from));
         if (sendAs8bit) {
             command.append(" BODY=8BITMIME"); 
+        }
+        
+        // some servers ask for a size estimate on the initial send 
+        if (supportsExtension("SIZE")) {
+            int estimate = getSizeEstimate(message); 
+            if (estimate > 0) {
+                command.append(" SIZE=" + estimate); 
+            }
         }
 
         // does this server support Delivery Status Notification? Then we may
