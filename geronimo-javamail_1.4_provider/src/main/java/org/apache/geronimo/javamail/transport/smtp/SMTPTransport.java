@@ -142,6 +142,10 @@ public class SMTPTransport extends Transport {
     protected static final String MAIL_SMTP_ENCODE_TRACE = "encodetrace";
     
     protected static final String MAIL_SMTP_ALLOW8BITMIME = "allow8bitmime";
+    
+    protected static final String MAIL_SMTP_SSL_PROTOCOLS = "ssl.protocols"; 
+    
+    protected static final String MAIL_SMTP_SSL_CIPHERSUITES = "ssl.ciphersuites"; 
 
     protected static final int MIN_MILLIS = 1000 * 60;
 
@@ -1320,6 +1324,33 @@ public class SMTPTransport extends Transport {
 
         if (timeout >= 0) {
             socket.setSoTimeout(timeout);
+        }
+        
+        // if there is a list of protocols specified, we need to break this down into 
+        // the individual names 
+        String protocols = getProtocolProperty(MAIL_SMTP_SSL_PROTOCOLS); 
+        if (protocols != null) {
+            ArrayList<String> list = new ArrayList<String>(); 
+            StringTokenizer t = new StringTokenizer(protocols); 
+            
+            while (t.hasMoreTokens()) {
+                list.add(t.nextToken()); 
+            }
+            
+            ((SSLSocket)socket).setEnabledProtocols(list.toArray(new String[list.size()])); 
+        }
+        
+        // and do the same for any cipher suites 
+        String suites = getProtocolProperty(MAIL_SMTP_SSL_CIPHERSUITES); 
+        if (suites != null) {
+            ArrayList<String> list = new ArrayList<String>(); 
+            StringTokenizer t = new StringTokenizer(suites); 
+            
+            while (t.hasMoreTokens()) {
+                list.add(t.nextToken()); 
+            }
+            
+            ((SSLSocket)socket).setEnabledCipherSuites(list.toArray(new String[list.size()])); 
         }
     }
 
