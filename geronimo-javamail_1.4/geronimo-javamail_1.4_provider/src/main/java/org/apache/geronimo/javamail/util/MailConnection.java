@@ -76,6 +76,8 @@ public class MailConnection {
     protected static final String MAIL_SSL_FACTORY_CLASS = "SSLsocketFactory.class";
     protected static final String MAIL_SSL_FACTORY_FALLBACK = "SSLsocketFactory.fallback";
     protected static final String MAIL_SSL_FACTORY_PORT = "SSLsocketFactory.port";
+    protected static final String MAIL_SSL_PROTOCOLS = "ssl.protocols";
+    protected static final String MAIL_SSL_CIPHERSUITES = "ssl.ciphersuites";
     protected static final String MAIL_LOCALADDRESS = "localaddress";
     protected static final String MAIL_LOCALPORT = "localport";
     protected static final String MAIL_ENCODE_TRACE = "encodetrace";
@@ -412,6 +414,33 @@ public class MailConnection {
         // and set the timeout value 
         if (timeout >= 0) {
             socket.setSoTimeout(timeout);
+        }
+        
+        // if there is a list of protocols specified, we need to break this down into 
+        // the individual names 
+        String protocols = props.getProperty(MAIL_SSL_PROTOCOLS); 
+        if (protocols != null) {
+            ArrayList<String> list = new ArrayList<String>(); 
+            StringTokenizer t = new StringTokenizer(protocols); 
+            
+            while (t.hasMoreTokens()) {
+                list.add(t.nextToken()); 
+            }
+            
+            ((SSLSocket)socket).setEnabledProtocols(list.toArray(new String[list.size()])); 
+        }
+        
+        // and do the same for any cipher suites 
+        String suites = props.getProperty(MAIL_SSL_CIPHERSUITES); 
+        if (suites != null) {
+            ArrayList<String> list = new ArrayList<String>(); 
+            StringTokenizer t = new StringTokenizer(suites); 
+            
+            while (t.hasMoreTokens()) {
+                list.add(t.nextToken()); 
+            }
+            
+            ((SSLSocket)socket).setEnabledCipherSuites(list.toArray(new String[list.size()])); 
         }
     }
 
