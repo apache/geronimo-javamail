@@ -67,6 +67,7 @@ public class MailConnection {
     protected static final String MAIL_TIMEOUT = "timeout";
     protected static final String MAIL_SASL_ENABLE = "sasl.enable";
     protected static final String MAIL_SASL_REALM = "sasl.realm";
+    protected static final String MAIL_AUTHORIZATIONID = "sasl.authorizationid"; 
     protected static final String MAIL_SASL_MECHANISMS = "sasl.mechanisms";
     protected static final String MAIL_PLAIN_DISABLE = "auth.plain.disable";
     protected static final String MAIL_LOGIN_DISABLE = "auth.login.disable";
@@ -151,8 +152,6 @@ public class MailConnection {
     // property list of authentication mechanisms
     protected List mechanisms; 
     
-
-    
     protected MailConnection(ProtocolProperties props) 
     {
         // this is our properties retriever utility, which will look up 
@@ -168,6 +167,54 @@ public class MailConnection {
         // initialize our debug settings from the session 
         debug = session.getDebug(); 
         debugStream = session.getDebugOut();
+    }
+    
+    
+    /**
+     * Connect to the server and do the initial handshaking.
+     * 
+     * @param host     The target host name.
+     * @param port     The target port
+     * @param username The connection username (can be null)
+     * @param password The authentication password (can be null).
+     * 
+     * @return true if we were able to obtain a connection and 
+     *         authenticate.
+     * @exception MessagingException
+     */
+    public boolean protocolConnect(String host, int port, String username, String password) throws MessagingException {
+        // NOTE:  We don't check for the username/password being null at this point.  It's possible that 
+        // the server will send back a PREAUTH response, which means we don't need to go through login 
+        // processing.  We'll need to check the capabilities response after we make the connection to decide 
+        // if logging in is necesssary. 
+        
+        // save this for subsequent connections.  All pool connections will use this info.
+        // if the port is defaulted, then see if we have something configured in the session.
+        // if not configured, we just use the default default.
+        if (port == -1) {
+            // check for a property and fall back on the default if it's not set.
+            port = props.getIntProperty(MAIL_PORT, props.getDefaultPort());
+            // it's possible that -1 might have been explicitly set, so one last check. 
+            if (port == -1) {
+                port = props.getDefaultPort(); 
+            }
+        }
+    	
+    	// Before we do anything, let's make sure that we succesfully received a host
+    	if ( host == null ) {
+    		host = DEFAULT_MAIL_HOST;
+    	}
+        
+        this.serverHost = host;
+        this.serverPort = port;
+        this.username = username;
+        this.password = password;
+        
+        // make sure we have the realm information 
+        realm = props.getProperty(MAIL_SASL_REALM); 
+        // get an authzid value, if we have one.  The default is to use the username.
+        authid = props.getProperty(MAIL_AUTHORIZATIONID, username);
+        return true; 
     }
     
     
@@ -232,9 +279,7 @@ public class MailConnection {
      * @exception MessagingException
      */
     protected void getConnectedSocket() throws IOException {
-        if (debug) {
-            debugOut("Attempting plain socket connection to server " + serverHost + ":" + serverPort);
-        }
+        debugOut("Attempting plain socket connection to server " + serverHost + ":" + serverPort);
 
         // check the properties that control how we connect. 
         getConnectionProperties(); 
@@ -290,9 +335,7 @@ public class MailConnection {
                 // if a socket factor is specified, then we may need to fall back to a default.  This behavior
                 // is controlled by (surprise) more session properties.
                 if (props.getBooleanProperty(MAIL_FACTORY_FALLBACK, false)) {
-                    if (debug) {
-                        debugOut("First plain socket attempt failed, falling back to default factory", e);
-                    }
+                    debugOut("First plain socket attempt failed, falling back to default factory", e);
                     socket = new Socket(serverHost, serverPort, localAddress, localPort);
                 }
                 // we have an exception.  We're going to throw an IOException, which may require unwrapping
@@ -303,9 +346,7 @@ public class MailConnection {
                         e = ((InvocationTargetException)e).getTargetException();
                     }
 
-                    if (debug) {
-                        debugOut("Plain socket creation failure", e);
-                    }
+                    debugOut("Plain socket creation failure", e);
 
                     // throw this as an IOException, with the original exception attached.
                     IOException ioe = new IOException("Error connecting to " + serverHost + ", " + serverPort);
@@ -327,9 +368,7 @@ public class MailConnection {
      * @exception MessagingException
      */
     protected void getConnectedSSLSocket() throws IOException {
-        if (debug) {
-            debugOut("Attempting SSL socket connection to server " + serverHost + ":" + serverPort);
-        }
+        debugOut("Attempting SSL socket connection to server " + serverHost + ":" + serverPort);
         // the socket factory can be specified via a protocol property, a session property, and if all else
         // fails (which it usually does), we fall back to the standard factory class.
         String socketFactory = props.getProperty(MAIL_SSL_FACTORY_CLASS, props.getSessionProperty(MAIL_SSL_FACTORY_CLASS, "javax.net.ssl.SSLSocketFactory"));
@@ -342,9 +381,7 @@ public class MailConnection {
 
         while (true) {
             try {
-                if (debug) {
-                    debugOut("Creating SSL socket using factory " + socketFactory);
-                }
+                debugOut("Creating SSL socket using factory " + socketFactory);
 
                 int socketFactoryPort = props.getIntProperty(MAIL_SSL_FACTORY_PORT, -1);
 
@@ -385,9 +422,7 @@ public class MailConnection {
                 // if we're allowed to fallback, then use the default factory and try this again.  We only
                 // allow this to happen once.
                 if (fallback) {
-                    if (debug) {
-                        debugOut("First attempt at creating SSL socket failed, falling back to default factory");
-                    }
+                    debugOut("First attempt at creating SSL socket failed, falling back to default factory");
                     socketFactory = "javax.net.ssl.SSLSocketFactory";
                     fallback = false;
                     continue;
@@ -400,10 +435,7 @@ public class MailConnection {
                         e = ((InvocationTargetException)e).getTargetException();
                     }
 
-                    if (debug) {
-                        debugOut("Failure creating SSL socket", e);
-                    }
-
+                    debugOut("Failure creating SSL socket", e);
                     // throw this as an IOException, with the original exception attached.
                     IOException ioe = new IOException("Error connecting to " + serverHost + ", " + serverPort);
                     ioe.initCause(e);
@@ -450,9 +482,7 @@ public class MailConnection {
      * switching to an SSL socket.
      */
     protected void getConnectedTLSSocket() throws MessagingException {
-        if (debug) {
-            debugOut("Attempting to negotiate STARTTLS with server " + serverHost);
-        }
+        debugOut("Attempting to negotiate STARTTLS with server " + serverHost);
      	// it worked, now switch the socket into TLS mode
      	try {
 
@@ -497,9 +527,7 @@ public class MailConnection {
             getConnectionStreams(); 
      	}
         catch (Exception e) {
-            if (debug) {
-                debugOut("Failure attempting to convert connection to TLS", e);
-            }
+            debugOut("Failure attempting to convert connection to TLS", e);
      	    throw new MessagingException("Unable to convert connection to SSL", e);
      	}
     }
@@ -690,7 +718,9 @@ public class MailConnection {
      * @param value  The string value to output.
      */
     protected void debugOut(String message) {
-        debugStream.println("IMAPStore DEBUG: " + message);
+        if (debug) {
+            debugStream.println("IMAPStore DEBUG: " + message);
+        }
     }
 
     /**
@@ -700,9 +730,11 @@ public class MailConnection {
      * @param e       The received exception.
      */
     protected void debugOut(String message, Throwable e) {
-        debugOut("Received exception -> " + message);
-        debugOut("Exception message -> " + e.getMessage());
-        e.printStackTrace(debugStream);
+        if (debug) {
+            debugOut("Received exception -> " + message);
+            debugOut("Exception message -> " + e.getMessage());
+            e.printStackTrace(debugStream);
+        }
     }
     
     
@@ -737,5 +769,15 @@ public class MailConnection {
      */
     public boolean supportsMechanism(String mech) {
         return authentications.contains(mech); 
+    }
+    
+    
+    /**
+     * Retrieve the connection host. 
+     * 
+     * @return The host name. 
+     */
+    public String getHost() {
+        return serverHost; 
     }
 }

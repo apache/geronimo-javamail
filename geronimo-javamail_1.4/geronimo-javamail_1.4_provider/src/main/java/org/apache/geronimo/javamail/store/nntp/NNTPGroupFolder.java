@@ -181,11 +181,11 @@ public class NNTPGroupFolder extends NNTPFolder {
      * 
      * @exception MessagingException
      */
-    public void openFolder() throws MessagingException {
+    protected void openFolder() throws MessagingException {
         // update the group specifics, especially the message count.
         updateGroupStats();
 
-        // get a cache for retrieve articles
+        // get a cache for retrieved articles
         articles = new HashMap();
     }
 
@@ -252,6 +252,9 @@ public class NNTPGroupFolder extends NNTPFolder {
      * @return An array of all messages in the group.
      */
     public Message[] getMessages() throws MessagingException {
+        // Can only be performed on an Open folder
+        checkOpen();
+        
         // we're going to try first with XHDR, which will allow us to retrieve
         // everything in one shot. If that
         // fails, we'll fall back on issing STAT commands for the entire article
@@ -273,7 +276,7 @@ public class NNTPGroupFolder extends NNTPFolder {
                     String messageID = line.substring(pos + 1);
                     Integer key = new Integer(articleID);
                     // see if we have this message cached, If not, create it.
-                    Message message = (Message) articles.get(key);
+                    Message message = (Message)articles.get(key);
                     if (message == null) {
                         message = new NNTPMessage(this, (NNTPStore) store, key.intValue(), messageID);
                         articles.put(key, message);

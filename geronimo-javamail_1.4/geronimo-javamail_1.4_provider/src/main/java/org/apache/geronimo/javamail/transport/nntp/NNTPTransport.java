@@ -33,7 +33,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.NewsAddress;
 
-import org.apache.geronimo.mail.util.SessionUtil;
+import org.apache.geronimo.javamail.util.ProtocolProperties; 
 
 /**
  * Simple implementation of NNTP transport. Just does plain RFC977-ish delivery.
@@ -44,25 +44,19 @@ import org.apache.geronimo.mail.util.SessionUtil;
  * @version $Rev$ $Date$
  */
 public class NNTPTransport extends Transport {
-
     /**
      * property keys for protocol properties.
      */
-    protected static final String NNTP_AUTH = "auth";
-
-    protected static final String NNTP_PORT = "port";
-
     protected static final String NNTP_FROM = "from";
 
-    protected static final String protocol = "nntp-post";
-
     protected static final int DEFAULT_NNTP_PORT = 119;
+    protected static final int DEFAULT_NNTP_SSL_PORT = 563;
 
+    // our accessor for protocol properties and the holder of 
+    // protocol-specific information 
+    protected ProtocolProperties props; 
     // our active connection object (shared code with the NNTPStore).
     protected NNTPConnection connection;
-
-    // our session provided debug output stream.
-    protected PrintStream debugStream;
 
     /**
      * Normal constructor for an NNTPTransport() object. This constructor is
@@ -74,10 +68,37 @@ public class NNTPTransport extends Transport {
      *            An optional URLName object containing target information.
      */
     public NNTPTransport(Session session, URLName name) {
-        super(session, name);
+        this(session, name, "nntp-post", DEFAULT_NNTP_PORT, false);
+    }
 
-        // get our debug output.
-        debugStream = session.getDebugOut();
+    /**
+     * Common constructor used by the POP3Store and POP3SSLStore classes
+     * to do common initialization of defaults.
+     *
+     * @param session
+     *            The host session instance.
+     * @param name
+     *            The URLName of the target.
+     * @param protocol
+     *            The protocol type ("pop3"). This helps us in
+     *            retrieving protocol-specific session properties.
+     * @param defaultPort
+     *            The default port used by this protocol. For pop3, this will
+     *            be 110. The default for pop3 with ssl is 995.
+     * @param sslConnection
+     *            Indicates whether an SSL connection should be used to initial
+     *            contact the server. This is different from the STARTTLS
+     *            support, which switches the connection to SSL after the
+     *            initial startup.
+     */
+    protected NNTPTransport(Session session, URLName name, String protocol, int defaultPort, boolean sslConnection) {
+        super(session, name);
+        
+        // create the protocol property holder.  This gives an abstraction over the different 
+        // flavors of the protocol. 
+        props = new ProtocolProperties(session, protocol, sslConnection, defaultPort); 
+        // the connection manages connection for the transport 
+        connection = new NNTPConnection(props); 
     }
 
     /**
@@ -101,43 +122,10 @@ public class NNTPTransport extends Transport {
      */
     protected boolean protocolConnect(String host, int port, String username, String password)
             throws MessagingException {
-        if (debug) {
-            debugOut("Connecting to server " + host + ":" + port + " for user " + username);
-        }
-
-        // first check to see if we need to authenticate. If we need this, then
-        // we must have a username and
-        // password specified. Failing this may result in a user prompt to
-        // collect the information.
-        boolean mustAuthenticate = SessionUtil.getBooleanProperty(session, NNTP_AUTH, false);
-
-        // if we need to authenticate, and we don't have both a userid and
-        // password, then we fail this
-        // immediately. The Service.connect() method will try to obtain the user
-        // information and retry the
-        // connection one time.
-        if (mustAuthenticate && (username == null || password == null)) {
-            return false;
-        }
-
-        // if the port is defaulted, then see if we have something configured in
-        // the session.
-        // if not configured, we just use the default default.
-        if (port == -1) {
-            // check for a property and fall back on the default if it's not
-            // set.
-            port = SessionUtil.getIntProperty(session, NNTP_PORT, DEFAULT_NNTP_PORT);
-        }
-
-        // create socket and connect to server.
-        connection = new NNTPConnection(protocol, session, host, port, username, password, debug);
-        connection.connect();
-
-        // we're going to return success here, but in truth, the server may end
-        // up asking for our
-        // bonafides at any time, and we'll be expected to authenticate then.
-        return true;
+        // the connection pool handles all of the details here. 
+        return connection.protocolConnect(host, port, username, password);
     }
+    
 
     /**
      * Send a message to multiple addressees.
@@ -178,7 +166,7 @@ public class NNTPTransport extends Transport {
         // the property version, if available.
         if (fromAddresses == null || fromAddresses.length == 0) {
             // the from value can be set explicitly as a property
-            String defaultFrom = session.getProperty(NNTP_FROM);
+            String defaultFrom = props.getProperty(NNTP_FROM);
             if (defaultFrom == null) {
                 message.setFrom(new InternetAddress(defaultFrom));
             }
@@ -268,106 +256,5 @@ public class NNTPTransport extends Transport {
         super.close();
         connection.close();
         connection = null;
-    }
-
-    /**
-     * Internal debug output routine.
-     * 
-     * @param value
-     *            The string value to output.
-     */
-    protected void debugOut(String message) {
-        debugStream.println("NNTPTransport DEBUG: " + message);
-    }
-
-    /**
-     * Internal debugging routine for reporting exceptions.
-     * 
-     * @param message
-     *            A message associated with the exception context.
-     * @param e
-     *            The received exception.
-     */
-    protected void debugOut(String message, Throwable e) {
-        debugOut("Received exception -> " + message);
-        debugOut("Exception message -> " + e.getMessage());
-        e.printStackTrace(debugStream);
-    }
-
-    /**
-     * Get a property associated with this mail protocol.
-     * 
-     * @param name
-     *            The name of the property.
-     * 
-     * @return The property value (returns null if the property has not been
-     *         set).
-     */
-    String getProperty(String name) {
-        // the name we're given is the least qualified part of the name. We
-        // construct the full property name
-        // using the protocol (either "nntp" or "nntp-post").
-        String fullName = "mail." + protocol + "." + name;
-        return session.getProperty(fullName);
-    }
-
-    /**
-     * Get a property associated with this mail session. Returns the provided
-     * default if it doesn't exist.
-     * 
-     * @param name
-     *            The name of the property.
-     * @param defaultValue
-     *            The default value to return if the property doesn't exist.
-     * 
-     * @return The property value (returns defaultValue if the property has not
-     *         been set).
-     */
-    String getProperty(String name, String defaultValue) {
-        // the name we're given is the least qualified part of the name. We
-        // construct the full property name
-        // using the protocol (either "nntp" or "nntp-post").
-        String fullName = "mail." + protocol + "." + name;
-        return SessionUtil.getProperty(session, fullName, defaultValue);
-    }
-
-    /**
-     * Get a property associated with this mail session as an integer value.
-     * Returns the default value if the property doesn't exist or it doesn't
-     * have a valid int value.
-     * 
-     * @param name
-     *            The name of the property.
-     * @param defaultValue
-     *            The default value to return if the property doesn't exist.
-     * 
-     * @return The property value converted to an int.
-     */
-    int getIntProperty(String name, int defaultValue) {
-        // the name we're given is the least qualified part of the name. We
-        // construct the full property name
-        // using the protocol (either "nntp" or "nntp-post").
-        String fullName = "mail." + protocol + "." + name;
-        return SessionUtil.getIntProperty(session, fullName, defaultValue);
-    }
-
-    /**
-     * Get a property associated with this mail session as an boolean value.
-     * Returns the default value if the property doesn't exist or it doesn't
-     * have a valid int value.
-     * 
-     * @param name
-     *            The name of the property.
-     * @param defaultValue
-     *            The default value to return if the property doesn't exist.
-     * 
-     * @return The property value converted to a boolean
-     */
-    boolean getBooleanProperty(String name, boolean defaultValue) {
-        // the name we're given is the least qualified part of the name. We
-        // construct the full property name
-        // using the protocol (either "nntp" or "nntp-post").
-        String fullName = "mail." + protocol + "." + name;
-        return SessionUtil.getBooleanProperty(session, fullName, defaultValue);
     }
 }

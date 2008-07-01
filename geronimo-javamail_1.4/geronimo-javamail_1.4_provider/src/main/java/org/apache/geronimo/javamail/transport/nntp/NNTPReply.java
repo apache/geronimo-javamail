@@ -33,6 +33,8 @@ import javax.mail.MessagingException;
  */
 public class NNTPReply {
     // general server responses
+    public static final int CAPABILITY_LIST = 101; 
+    
     public static final int POSTING_ALLOWED = 200;
 
     public static final int NO_POSTING_ALLOWED = 201;
