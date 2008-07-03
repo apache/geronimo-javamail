@@ -50,9 +50,6 @@ import org.apache.geronimo.mail.util.SessionUtil;
 
 /**
  * Simple implementation of NNTP transport. Just does plain RFC977-ish delivery.
- * <p/> There is no way to indicate failure for a given recipient (it's possible
- * to have a recipient address rejected). The sun impl throws exceptions even if
- * others successful), but maybe we do a different way... <p/>
  * 
  * @version $Rev$ $Date$
  */
@@ -78,9 +75,6 @@ public class NNTPConnection extends MailConnection {
     
     // the last response line received from the server.
     protected NNTPReply lastServerResponse = null;
-
-    // map of server extension arguments
-    protected HashMap serverExtensionArgs;
 
     // the welcome string from the server.
     protected String welcomeString = null;
@@ -318,8 +312,8 @@ public class NNTPConnection extends MailConnection {
      *         supported.
      */
     public String extensionParameter(String name) {
-        if (serverExtensionArgs != null) {
-            return (String) serverExtensionArgs.get(name);
+        if (capabilities != null) {
+            return (String) capabilities.get(name);
         }
         return null;
     }
