@@ -254,7 +254,7 @@ public class NNTPTransport extends Transport {
     public void close() throws MessagingException {
         // This is done to ensure proper event notification.
         super.close();
+        // NB:  We reuse the connection if asked to reconnect 
         connection.close();
-        connection = null;
     }
 }

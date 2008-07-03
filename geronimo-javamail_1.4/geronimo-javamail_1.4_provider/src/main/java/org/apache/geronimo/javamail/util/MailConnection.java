@@ -122,6 +122,9 @@ public class MailConnection {
     protected InetAddress localAddress;
     // our local port value 
     protected int localPort; 
+    // our local host name
+    protected String localHost;
+    
     // our timeout value 
     protected int timeout; 
     
@@ -215,6 +218,17 @@ public class MailConnection {
         // get an authzid value, if we have one.  The default is to use the username.
         authid = props.getProperty(MAIL_AUTHORIZATIONID, username);
         return true; 
+    }
+    
+    
+    /**
+     * Establish a connection using an existing socket. 
+     * 
+     * @param s      The socket to use.
+     */
+    public void connect(Socket s) {
+        // just save the socket connection 
+        this.socket = s; 
     }
     
     
@@ -482,7 +496,6 @@ public class MailConnection {
      * switching to an SSL socket.
      */
     protected void getConnectedTLSSocket() throws MessagingException {
-        debugOut("Attempting to negotiate STARTTLS with server " + serverHost);
      	// it worked, now switch the socket into TLS mode
      	try {
 
@@ -518,6 +531,7 @@ public class MailConnection {
             if (sslSocket instanceof SSLSocket) {
                 ((SSLSocket)sslSocket).setEnabledProtocols(new String[] {"TLSv1"} );
                 ((SSLSocket)sslSocket).setUseClientMode(true);
+                debugOut("Initiating STARTTLS handshake"); 
                 ((SSLSocket)sslSocket).startHandshake();
             }
 
@@ -525,6 +539,7 @@ public class MailConnection {
             // this is our active socket now
             socket = sslSocket;
             getConnectionStreams(); 
+            debugOut("TLS connection established"); 
      	}
         catch (Exception e) {
             debugOut("Failure attempting to convert connection to TLS", e);
@@ -719,7 +734,7 @@ public class MailConnection {
      */
     protected void debugOut(String message) {
         if (debug) {
-            debugStream.println("IMAPStore DEBUG: " + message);
+            debugStream.println(protocol + " DEBUG: " + message);
         }
     }
 
@@ -779,5 +794,49 @@ public class MailConnection {
      */
     public String getHost() {
         return serverHost; 
+    }
+    
+
+    /**
+     * Retrieve the local client host name.
+     *
+     * @return The string version of the local host name.
+     * @exception SMTPTransportException
+     */
+    public String getLocalHost() throws MessagingException {
+        if (localHost == null) {
+
+            try {
+                localHost = InetAddress.getLocalHost().getHostName();
+            } catch (UnknownHostException e) {
+                // fine, we're misconfigured - ignore
+            }
+
+            if (localHost == null) {
+                localHost = props.getProperty(MAIL_LOCALHOST);
+            }
+
+            if (localHost == null) {
+                localHost = props.getSessionProperty(MAIL_LOCALHOST);
+            }
+
+            if (localHost == null) {
+                throw new MessagingException("Can't get local hostname. "
+                        + " Please correctly configure JDK/DNS or set mail.smtp.localhost");
+            }
+        }
+
+        return localHost;
+    }
+
+    
+    /**
+     * Explicitly set the local host information.
+     *
+     * @param localHost
+     *            The new localHost name.
+     */
+    public void setLocalHost(String localHost) {
+        this.localHost = localHost;
     }
 }

@@ -28,6 +28,49 @@ import java.util.List;
  * @version $Rev$ $Date$
  */
 class SMTPReply {
+    // SMTP reply codes
+    public static final int SERVICE_READY = 220;
+
+    public static final int SERVICE_CLOSING = 221;
+
+    public static final int AUTHENTICATION_COMPLETE = 235;
+
+    public static final int COMMAND_ACCEPTED = 250;
+
+    public static final int ADDRESS_NOT_LOCAL = 251;
+
+    public static final int AUTHENTICATION_CHALLENGE = 334;
+
+    public static final int START_MAIL_INPUT = 354;
+
+    public static final int SERVICE_NOT_AVAILABLE = 421;
+
+    public static final int MAILBOX_BUSY = 450;
+
+    public static final int PROCESSING_ERROR = 451;
+
+    public static final int INSUFFICIENT_STORAGE = 452;
+
+    public static final int COMMAND_SYNTAX_ERROR = 500;
+
+    public static final int PARAMETER_SYNTAX_ERROR = 501;
+
+    public static final int COMMAND_NOT_IMPLEMENTED = 502;
+
+    public static final int INVALID_COMMAND_SEQUENCE = 503;
+
+    public static final int COMMAND_PARAMETER_NOT_IMPLEMENTED = 504;
+
+    public static final int MAILBOX_NOT_FOUND = 550;
+
+    public static final int USER_NOT_LOCAL = 551;
+
+    public static final int MAILBOX_FULL = 552;
+
+    public static final int INVALID_MAILBOX = 553;
+
+    public static final int TRANSACTION_FAILED = 553;
+    
     // The original reply string
     private final String reply;
 
