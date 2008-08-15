@@ -234,12 +234,21 @@ public class POP3Store extends Store {
     public boolean isConnected() {
         try {
             POP3Connection connection = getConnection(); 
+            // a null connection likely means we had a failure establishing a 
+            // new connection to the POP3 server.  
+            if (connection == null) {
+                return false; 
+            }
             try {
+                // make sure the server is really there 
                 connection.pingServer(); 
                 return true; 
             }
             finally {
-                releaseConnection(connection); 
+                // return the connection to the pool when finished 
+                if (connection != null) {
+                    releaseConnection(connection); 
+                }
             }
         } catch (MessagingException e) {
         }
