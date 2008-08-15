@@ -238,7 +238,9 @@ public class NNTPGroupFolder extends NNTPFolder {
         int idStart = response.indexOf('<');
         int idEnd = response.indexOf('>');
 
-        message = new NNTPMessage(this, (NNTPStore) store, msgNum, response.substring(idStart + 1, idEnd));
+        // NB:  The "<" and ">" delimiters are required elements of the message id, not just 
+        // delimiters for the sake of the command.  We need to keep these around 
+        message = new NNTPMessage(this, (NNTPStore) store, msgNum, response.substring(idStart, idEnd + 1));
 
         // add this to the article cache.
         articles.put(key, message);
