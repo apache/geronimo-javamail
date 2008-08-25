@@ -77,7 +77,7 @@
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-javamail_1.4_spec</artifactId>
-                <version>1.4</version>
+                <version>1.5-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
