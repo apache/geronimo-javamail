@@ -171,25 +171,55 @@ public class POP3Store extends Store {
     }
     
     
+    /**
+     * Get a connection for the store. 
+     * 
+     * @return The request connection object. 
+     * @exception MessagingException
+     */
     protected POP3Connection getConnection() throws MessagingException {
         return connectionPool.getConnection(); 
     }
     
+    /**
+     * Return a connection back to the connection pool after 
+     * it has been used for a request. 
+     * 
+     * @param connection The return connection.
+     * 
+     * @exception MessagingException
+     */
     protected void releaseConnection(POP3Connection connection) throws MessagingException {
         connectionPool.releaseConnection(connection); 
     }
     
+    /**
+     * Get a connection object for a folder to use. 
+     * 
+     * @param folder The requesting folder (always the inbox for POP3).
+     * 
+     * @return An active POP3Connection. 
+     * @exception MessagingException
+     */
     synchronized POP3Connection getFolderConnection(POP3Folder folder) throws MessagingException {
         POP3Connection connection = connectionPool.getConnection(); 
         openFolders.add(folder);
         return connection; 
     }
     
+    /**
+     * Release a connection object after a folder is 
+     * finished with a request. 
+     * 
+     * @param folder     The requesting folder.
+     * @param connection
+     * 
+     * @exception MessagingException
+     */
     synchronized void releaseFolderConnection(POP3Folder folder, POP3Connection connection) throws MessagingException {
         openFolders.remove(folder); 
-        // a connection returned from a folder is no longer usable. Just close it and 
-        // let it drift off. 
-        connection.close(); 
+        // return this back to the pool 
+        connectionPool.releaseConnection(connection); 
     }
     
     /**
