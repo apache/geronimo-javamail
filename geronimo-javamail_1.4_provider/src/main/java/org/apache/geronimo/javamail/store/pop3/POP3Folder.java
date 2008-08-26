@@ -53,8 +53,6 @@ public class POP3Folder extends Folder {
 
     protected int mode;
 
-    protected POP3Connection currentConnection; 
-
     protected int msgCount;
 
     private POP3Message[] messageCache; 
@@ -199,15 +197,11 @@ public class POP3Folder extends Folder {
         // Can only be performed on a closed folder
         checkClosed();
 
+        // get a connection object 
+        POP3Connection connection = getConnection(); 
+        
         try {
-            
-            // ask the store to kindly hook us up with a connection.
-            // We're going to hang on to this until we're closed, so store it in 
-            // the Folder field.  We need to make sure our mailbox is selected while 
-            // we're working things. 
-            currentConnection = ((POP3Store)store).getFolderConnection(this); 
-
-            POP3StatusResponse res = currentConnection.retrieveMailboxStatus();
+            POP3StatusResponse res = connection.retrieveMailboxStatus();
             this.mode = mode;
             this.isFolderOpen = true;
             this.msgCount = res.getNumMessages();
@@ -220,6 +214,10 @@ public class POP3Folder extends Folder {
             messageCache = new POP3Message[msgCount]; 
         } catch (Exception e) {
             throw new MessagingException("Unable to execute STAT command", e);
+        }
+        finally {
+            // return the connection when finished 
+            releaseConnection(connection); 
         }
 
         notifyConnectionListeners(ConnectionEvent.OPENED);
@@ -235,14 +233,19 @@ public class POP3Folder extends Folder {
     public void close(boolean expunge) throws MessagingException {
         // Can only be performed on an open folder
         checkOpen();
+
+        // get a connection object 
+        POP3Connection connection = getConnection(); 
         try {
             // we might need to reset the connection before we 
             // process deleted messages and send the QUIT.  The 
             // connection knows if we need to do this. 
-            currentConnection.reset(); 
+            connection.reset(); 
             // clean up any messages marked for deletion 
-            expungeDeletedMessages(); 
+            expungeDeletedMessages(connection); 
         } finally {
+            // return the connection when finished 
+            releaseConnection(connection); 
             // cleanup the the state even if exceptions occur when deleting the 
             // messages. 
             cleanupFolder(false); 
@@ -251,11 +254,11 @@ public class POP3Folder extends Folder {
     
     /**
      * Mark any messages we've flagged as deleted from the 
-     * IMAP server before closing. 
+     * POP3 server before closing. 
      * 
      * @exception MessagingException
      */
-    protected void expungeDeletedMessages() throws MessagingException {
+    protected void expungeDeletedMessages(POP3Connection connection) throws MessagingException {
         if (mode == READ_WRITE) {
             for (int i = 0; i < messageCache.length; i++) {
                 POP3Message msg = messageCache[i]; 
@@ -265,7 +268,7 @@ public class POP3Folder extends Folder {
                     // origin 1 value 
                     if (msg.isSet(Flags.Flag.DELETED)) {
                         try {
-                            currentConnection.deleteMessage(i + 1); 
+                            connection.deleteMessage(i + 1); 
                         } catch (MessagingException e) {
                             throw new MessagingException("Exception deleting message number " + (i + 1), e); 
                         }
@@ -292,20 +295,6 @@ public class POP3Folder extends Folder {
     protected void cleanupFolder(boolean disconnected) throws MessagingException {
         messageCache = null;
         isFolderOpen = false;
-        // if we have a connection active at the moment
-        if (currentConnection != null) {
-            // was this a forced disconnect by the server?
-            if (disconnected) {
-                currentConnection.setClosed(); 
-            }
-            else {
-                // have this close the selected mailbox 
-                currentConnection.logout();           
-            }
-            // we need to release the connection to the Store once we're closed 
-            ((POP3Store)store).releaseFolderConnection(this, currentConnection); 
-            currentConnection = null; 
-        }
 		notifyConnectionListeners(ConnectionEvent.CLOSED);
     }
     
@@ -319,15 +308,9 @@ public class POP3Folder extends Folder {
      * @exception MessagingException
      */
     synchronized POP3Connection getMessageConnection() throws MessagingException {
-        // if we're not open, the messages can't communicate either
-        if (currentConnection == null) {
-            throw new FolderClosedException(this, "No Folder connections available"); 
-        }
-        // return the current Folder connection.  At this point, we'll be sharing the 
-        // connection between the Folder and the Message (and potentially, other messages).  The 
-        // command operations on the connection are synchronized so only a single command can be 
-        // issued at one time. 
-        return currentConnection; 
+        // we always get one from the store.  If we're fully single threaded, then 
+        // we can get away with just a single one. 
+        return getConnection(); 
     }
     
     
@@ -339,7 +322,8 @@ public class POP3Folder extends Folder {
      * @exception MessagingException
      */
     void releaseMessageConnection(POP3Connection connection) throws MessagingException {
-        // This is a NOP for this folder type. 
+        // give this back to the store 
+        releaseConnection(connection); 
     }
 
     public boolean isOpen() {
@@ -503,4 +487,29 @@ public class POP3Folder extends Folder {
         super.notifyMessageChangedListeners(type, m);
     }
 
+    
+    /**
+     * Retrieve the connection attached to this folder.  Throws an
+     * exception if we don't have an active connection.
+     *
+     * @return The current connection object.
+     * @exception MessagingException
+     */
+    protected synchronized POP3Connection getConnection() throws MessagingException {
+        // request a connection from the central store. 
+        return ((POP3Store)store).getFolderConnection(this); 
+    }
+    
+    
+    /**
+     * Release our connection back to the Store.
+     * 
+     * @param connection The connection to release.
+     * 
+     * @exception MessagingException
+     */
+    protected void releaseConnection(POP3Connection connection) throws MessagingException {
+        // we need to release the connection to the Store once we're finished with it 
+        ((POP3Store)store).releaseFolderConnection(this, connection); 
+    }
 }
