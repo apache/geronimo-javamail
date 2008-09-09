@@ -262,6 +262,12 @@ public class POP3Store extends Store {
      * @see javax.mail.Service#isConnected()
      */
     public boolean isConnected() {
+        // the connect() method of the super class checks here first.  If the connected flag 
+        // is off, then it's too early for use to try to get a connection and verify we still 
+        // have a live one.  
+        if (!super.isConnected()) {
+            return false; 
+        }
         try {
             POP3Connection connection = getConnection(); 
             // a null connection likely means we had a failure establishing a 
