@@ -74,9 +74,6 @@ public class MailConnection {
     protected static final String MAIL_FACTORY_CLASS = "socketFactory.class";
     protected static final String MAIL_FACTORY_FALLBACK = "socketFactory.fallback";
     protected static final String MAIL_FACTORY_PORT = "socketFactory.port";
-    protected static final String MAIL_SSL_FACTORY_CLASS = "SSLsocketFactory.class";
-    protected static final String MAIL_SSL_FACTORY_FALLBACK = "SSLsocketFactory.fallback";
-    protected static final String MAIL_SSL_FACTORY_PORT = "SSLsocketFactory.port";
     protected static final String MAIL_SSL_PROTOCOLS = "ssl.protocols";
     protected static final String MAIL_SSL_CIPHERSUITES = "ssl.ciphersuites";
     protected static final String MAIL_LOCALADDRESS = "localaddress";
@@ -385,19 +382,19 @@ public class MailConnection {
         debugOut("Attempting SSL socket connection to server " + serverHost + ":" + serverPort);
         // the socket factory can be specified via a protocol property, a session property, and if all else
         // fails (which it usually does), we fall back to the standard factory class.
-        String socketFactory = props.getProperty(MAIL_SSL_FACTORY_CLASS, props.getSessionProperty(MAIL_SSL_FACTORY_CLASS, "javax.net.ssl.SSLSocketFactory"));
+        String socketFactory = props.getProperty(MAIL_FACTORY_CLASS, "javax.net.ssl.SSLSocketFactory");
 
         // make sure this is null 
         socket = null;
 
         // we'll try this with potentially two different factories if we're allowed to fall back.
-        boolean fallback = props.getBooleanProperty(MAIL_SSL_FACTORY_FALLBACK, false);
+        boolean fallback = props.getBooleanProperty(MAIL_FACTORY_FALLBACK, false);
 
         while (true) {
             try {
                 debugOut("Creating SSL socket using factory " + socketFactory);
 
-                int socketFactoryPort = props.getIntProperty(MAIL_SSL_FACTORY_PORT, -1);
+                int socketFactoryPort = props.getIntProperty(MAIL_FACTORY_PORT, -1);
 
                 // we choose the port used by the socket based on overrides.
                 Integer portArg = new Integer(socketFactoryPort == -1 ? serverPort : socketFactoryPort);
@@ -505,7 +502,7 @@ public class MailConnection {
 
             // the socket factory can be specified via a session property.  By default, we use
             // the native SSL factory.
-            String socketFactory = props.getProperty(MAIL_SSL_FACTORY_CLASS, "javax.net.ssl.SSLSocketFactory");
+            String socketFactory = props.getProperty(MAIL_FACTORY_CLASS, "javax.net.ssl.SSLSocketFactory");
 
             // use the current context loader to resolve this.
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
