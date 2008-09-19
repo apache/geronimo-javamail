@@ -56,8 +56,6 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
-                        <configuration>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
