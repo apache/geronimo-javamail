@@ -712,7 +712,7 @@ public class IMAPMessage extends MimeMessage {
      */
     protected void updateHeader(String header, InternetAddress[] addresses) throws MessagingException {
         if (addresses != null) {
-            headers.addHeader(header, InternetAddress.toString(envelope.from));
+            headers.addHeader(header, InternetAddress.toString(addresses));
         }
     }
 
