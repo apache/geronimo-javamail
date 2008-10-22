@@ -56,7 +56,7 @@ import org.apache.geronimo.javamail.util.ProtocolProperties;
 
 public class IMAPStore extends Store implements QuotaAwareStore, IMAPUntaggedResponseHandler {
     // the default connection ports for secure and non-secure variations
-    protected static final int DEFAULT_IMAP_PORT = 119;
+    protected static final int DEFAULT_IMAP_PORT = 143;
     protected static final int DEFAULT_IMAP_SSL_PORT = 993;
     
     protected static final String MAIL_STATUS_TIMEOUT = "statuscacheimeout";
