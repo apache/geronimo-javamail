@@ -32,6 +32,7 @@ import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
 
 /**
  * @version $Rev$ $Date$
@@ -57,6 +58,8 @@ public class AbstractImageHandler implements DataContentHandler {
             throw new UnsupportedDataTypeException("Unknown image type " + ds.getContentType());
         }
         ImageReader reader = (ImageReader) i.next();
+        ImageInputStream iis = ImageIO.createImageInputStream(ds.getInputStream());
+        reader.setInput(iis);
         return reader.read(0);
     }
 
