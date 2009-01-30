@@ -1073,9 +1073,13 @@ public class IMAPConnection extends MailConnection {
      * @exception MessagingException
      */
     public byte[] fetchContent(int sequenceNumber, String section) throws MessagingException {
-        // fetch the text item and return the data 
-        IMAPMessageText text = fetchBodyPartText(sequenceNumber, section);
-        return text.getContent();
+        if (section == null) {
+            IMAPMessageText text = fetchText(sequenceNumber);
+            return text.getContent();
+        } else {
+            IMAPBody body = fetchBody(sequenceNumber, section);
+            return body.getContent();
+        }
     }
 
 

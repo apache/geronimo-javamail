@@ -61,6 +61,7 @@ import org.apache.geronimo.javamail.store.imap.connection.IMAPInternalDate;
 import org.apache.geronimo.javamail.store.imap.connection.IMAPInternetHeader;
 import org.apache.geronimo.javamail.store.imap.connection.IMAPMessageSize;
 import org.apache.geronimo.javamail.store.imap.connection.IMAPUid;
+import org.apache.geronimo.javamail.util.MailConnection;
 
 /**
  * IMAP implementation of javax.mail.internet.MimeMessage
@@ -76,6 +77,9 @@ import org.apache.geronimo.javamail.store.imap.connection.IMAPUid;
  * @version $Rev$ $Date$
  */
 public class IMAPMessage extends MimeMessage {
+    
+    private static final byte[] CRLF = "\r\n".getBytes();
+    
     // the Store we're stored in (which manages the connection and other stuff).
     protected IMAPStore store;
 
@@ -236,30 +240,28 @@ public class IMAPMessage extends MimeMessage {
      * @exception IOException
      * @exception MessagingException
      */
-    public void writeTo(OutputStream out) throws IOException, MessagingException {
-        // TODO:  The connection is shared on a folder basis, so some of these operations
-        // will need to use a common locking object.
-        // make sure we're still good
-        checkValidity();
-        
-        // we need to ensure that we're the only ones with access to the folder's 
-        // message cache any time we need to talk to the server.  This needs to be 
-        // held until after we release the connection so that any pending EXPUNGE 
-        // untagged responses are processed before the next time the folder connection is 
-        // used. 
-        synchronized (folder) {
-            IMAPConnection connection = getConnection();
-            try {
-                IMAPBody body = connection.fetchBody(sequenceNumber, section);
-                byte[] outData = body.getContent();
-
-                // write out the data.
-                out.write(outData);
-            } finally {
-                releaseConnection(connection); 
-            }
+    public void writeTo(OutputStream out) throws IOException, MessagingException {                      
+        // no content loaded yet?
+        if (content == null) {
+            // make sure we're still valid
+            checkValidity();
+            // make sure the content is fully loaded
+            loadContent();
         }
+        
+        loadHeaders();
+        
+        Enumeration e = headers.getAllHeaderLines();
+        while(e.hasMoreElements()) {
+            String line = (String)e.nextElement();
+            out.write(line.getBytes());
+            out.write(CRLF);
+        }
+        out.write(CRLF);
+        out.write(CRLF);
+        out.write(content);
     }
+    
 	/******************************************************************
 	 * Following is a set of methods that deal with information in the 
 	 * envelope.  These methods ensure the enveloper is loaded and   
