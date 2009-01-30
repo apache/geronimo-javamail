@@ -38,7 +38,7 @@ public class IMAPBody extends IMAPFetchBodyPart {
      * @exception MessagingException
      */
     public IMAPBody(byte[] data) throws MessagingException {
-        this(new IMAPBodySection(IMAPBodySection.TEXT), data);
+        this(new IMAPBodySection(IMAPBodySection.BODY), data);
     }
     
     /**
@@ -51,7 +51,7 @@ public class IMAPBody extends IMAPFetchBodyPart {
      * @exception MessagingException
      */
     public IMAPBody(IMAPBodySection section, byte[] data) throws MessagingException {
-        super(TEXT, section);
+        super(BODY, section);
         // save the content 
         content = data; 
     }
