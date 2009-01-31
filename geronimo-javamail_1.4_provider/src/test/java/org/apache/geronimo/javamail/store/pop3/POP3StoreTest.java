@@ -14,7 +14,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package org.apache.geronimo.javamail.store.imap;
+package org.apache.geronimo.javamail.store.pop3;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,7 +36,7 @@ import junit.framework.TestCase;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetupTest;
 
-public class IMAPStoreTest extends TestCase {
+public class POP3StoreTest extends TestCase {
     
     private GreenMail greenMail;
     private Message[] messages;
@@ -44,24 +44,24 @@ public class IMAPStoreTest extends TestCase {
     @Override
     protected void setUp() throws Exception {
         // Setup GreenMail
-        greenMail = new GreenMail(ServerSetupTest.SMTP_IMAP);
+        greenMail = new GreenMail(ServerSetupTest.SMTP_POP3);       
         greenMail.start();
         greenMail.setUser("test@localhost", "test", "test");
         // Setup JavaMail session
         Properties props = new Properties();
         props.setProperty("mail.smtp.port", String.valueOf(greenMail.getSmtp().getPort()));
-        props.setProperty("mail.imap.port", String.valueOf(greenMail.getImap().getPort()));
+        props.setProperty("mail.pop3.port", String.valueOf(greenMail.getPop3().getPort()));
         
         System.out.println("stmp.port: " + greenMail.getSmtp().getPort());
-        System.out.println("imap port: " + greenMail.getImap().getPort());
+        System.out.println("pop3 port: " + greenMail.getPop3().getPort());
         
         Session session = Session.getInstance(props);
         // Send messages for the current test to GreenMail
         sendMessage(session, "/messages/multipart.msg");
         sendMessage(session, "/messages/simple.msg");
         
-        // Load the message from IMAP
-        Store store = session.getStore("imap");
+        // Load the message from POP3
+        Store store = session.getStore("pop3");
         store.connect("localhost", "test", "test");
         Folder folder = store.getFolder("INBOX");
         folder.open(Folder.READ_ONLY);
@@ -76,7 +76,7 @@ public class IMAPStoreTest extends TestCase {
 
     private void sendMessage(Session session, String msgFile) throws Exception {
         MimeMessage message;
-        InputStream in = IMAPStoreTest.class.getResourceAsStream(msgFile);
+        InputStream in = POP3StoreTest.class.getResourceAsStream(msgFile);
         try {
             message = new MimeMessage(session, in);
         } finally {
