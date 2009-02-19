@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.apache.geronimo.javamail</groupId>
         <artifactId>geronimo-javamail_1.4</artifactId>
-        <version>1.7</version>
+        <version>1.8-SNAPSHOT</version>
     </parent>
 
     <artifactId>geronimo-javamail_1.4_mail</artifactId>
