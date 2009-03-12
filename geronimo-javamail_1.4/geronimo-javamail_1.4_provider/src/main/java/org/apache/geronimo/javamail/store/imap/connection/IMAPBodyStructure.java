@@ -27,6 +27,8 @@ import javax.mail.MessagingException;
 import javax.mail.internet.ContentDisposition;
 import javax.mail.internet.ContentType;
 
+import org.apache.geronimo.javamail.util.ResponseFormatException;
+
 
 public class IMAPBodyStructure extends IMAPFetchDataItem {
 
@@ -94,9 +96,6 @@ public class IMAPBodyStructure extends IMAPFetchDataItem {
         // get the subtype (required)
         mimeType.setSubType(source.readString());
 
-        if (source.checkListEnd()) {
-            return;
-        }
         // if the next token is the list terminator, we're done.  Otherwise, we need to read extension
         // data.
         if (source.checkListEnd()) {
@@ -168,8 +167,16 @@ public class IMAPBodyStructure extends IMAPFetchDataItem {
 
         disposition = new ContentDisposition();
         // now the dispostion.  This is a string, followed by a parameter list.
-        disposition.setDisposition(source.readString());
-        disposition.setParameterList(source.readParameterList());
+        if (source.peek(true).getType() == '(') {
+            source.checkLeftParen();
+            disposition.setDisposition(source.readString());
+            disposition.setParameterList(source.readParameterList());
+            source.checkRightParen();
+        } else if (source.peek(true) == IMAPResponseTokenizer.NIL) {
+            source.next();
+        } else {
+            throw new ResponseFormatException("Expecting NIL or '(' in response");
+        }
 
         // once more
         if (source.checkListEnd()) {
@@ -187,11 +194,13 @@ public class IMAPBodyStructure extends IMAPFetchDataItem {
         // read the location info.
         source.readStringList();
 
-
         // we don't recognize any other forms of extension, so just skip over these.
         while (source.notListEnd()) {
             source.skipExtensionItem();
         }
+
+        // step over the closing paren
+        source.next();
     }
 
 

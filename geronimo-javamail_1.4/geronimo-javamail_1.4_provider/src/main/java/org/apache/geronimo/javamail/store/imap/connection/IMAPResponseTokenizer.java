@@ -613,9 +613,11 @@ public class IMAPResponseTokenizer {
      * @exception ResponseFormatException
      */
     public String readString() throws MessagingException {
-        Token token = next();
+        Token token = next(true);
         int type = token.getType();
-
+        if (type == Token.NIL) {
+            return null;
+        }
         if (type != Token.ATOM && type != Token.QUOTEDSTRING && type != Token.LITERAL && type != Token.NUMERIC) {
             throw new ResponseFormatException("String token expected in response: " + token.getValue());
         }
@@ -1083,11 +1085,11 @@ public class IMAPResponseTokenizer {
      * @exception ResponseFormatException
      */
     public List readStringList() throws MessagingException {
-        Token token = peek();
-
-        List list = new ArrayList();
+        Token token = peek(true);
 
         if (token.getType() == '(') {
+            List list = new ArrayList();
+
             next();
 
             while (notListEnd()) {
@@ -1098,17 +1100,25 @@ public class IMAPResponseTokenizer {
                 }
             }
             // step over the closing paren 
-            next(); 
+            next();
+
+            return list;
         }
-        else {
+        else if (token != NIL) {
+            List list = new ArrayList();
+
             // just a single string value.
             String value = readString();
             // this can be NIL, technically
             if (value != null) {
                 list.add(value);
             }
+
+            return list;
+        } else {
+            next();
         }
-        return list;
+        return null;
     }
 
 
