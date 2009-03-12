@@ -46,6 +46,9 @@ public class IMAPStatusResponse extends IMAPUntaggedResponse {
 
         // parse the list of flag values
         List flags = source.readStringList();
+        if (flags == null) {
+            return;
+        }
 
         for (int i = 0; i < flags.size(); i += 2) {
             String field = ((String)flags.get(i)).toUpperCase();
