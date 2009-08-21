@@ -19,9 +19,9 @@ package org.apache.geronimo.javamail.store.imap.connection;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList; 
-import java.util.Date; 
-import java.util.List; 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import javax.mail.Flags;
 import javax.mail.MessagingException;
@@ -29,7 +29,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MailDateFormat;
 import javax.mail.internet.ParameterList;
 
-import org.apache.geronimo.javamail.util.ResponseFormatException; 
+import org.apache.geronimo.javamail.util.ResponseFormatException;
 
 /**
  * @version $Rev$ $Date$
@@ -52,11 +52,11 @@ public class IMAPResponseTokenizer {
     static {
         initializeDecodingTable();
     }
-    
+
     // a singleton formatter for header dates.
     protected static MailDateFormat dateParser = new MailDateFormat();
-    
-    
+
+
     public static class Token {
         // Constant values from J2SE 1.4 API Docs (Constant values)
         public static final int ATOM = -1;
@@ -65,18 +65,18 @@ public class IMAPResponseTokenizer {
         public static final int NUMERIC = -4;
         public static final int EOF = -5;
         public static final int NIL = -6;
-        // special single character markers     
-        public static final int CONTINUATION = '-';
+        // special single character markers
+        public static final int CONTINUATION = '+';
         public static final int UNTAGGED = '*';
-            
+
         /**
-         * The type indicator.  This will be either a specific type, represented by 
-         * a negative number, or the actual character value. 
+         * The type indicator.  This will be either a specific type, represented by
+         * a negative number, or the actual character value.
          */
         private int type;
         /**
-         * The String value associated with this token.  All tokens have a String value, 
-         * except for the EOF and NIL tokens. 
+         * The String value associated with this token.  All tokens have a String value,
+         * except for the EOF and NIL tokens.
          */
         private String value;
 
@@ -98,10 +98,10 @@ public class IMAPResponseTokenizer {
         }
 
         /**
-         * Return the token as an integer value.  If this can't convert, an exception is 
-         * thrown. 
-         * 
-         * @return The integer value of the token. 
+         * Return the token as an integer value.  If this can't convert, an exception is
+         * thrown.
+         *
+         * @return The integer value of the token.
          * @exception ResponseFormatException
          */
         public int getInteger() throws MessagingException {
@@ -116,10 +116,10 @@ public class IMAPResponseTokenizer {
         }
 
         /**
-         * Return the token as a long value.  If it can't convert, an exception is 
-         * thrown. 
-         * 
-         * @return The token as a long value. 
+         * Return the token as a long value.  If it can't convert, an exception is
+         * thrown.
+         *
+         * @return The token as a long value.
          * @exception ResponseFormatException
          */
         public long getLong() throws MessagingException {
@@ -131,24 +131,24 @@ public class IMAPResponseTokenizer {
             }
             throw new ResponseFormatException("Number value expected in response; fount: " + value);
         }
-        
+
         /**
-         * Handy debugging toString() method for token. 
-         * 
-         * @return The string value of the token. 
+         * Handy debugging toString() method for token.
+         *
+         * @return The string value of the token.
          */
         public String toString() {
             if (type == NIL) {
-                return "NIL"; 
+                return "NIL";
             }
             else if (type == EOF) {
                 return "EOF";
             }
-            
+
             if (value == null) {
-                return ""; 
+                return "";
             }
-            return value; 
+            return value;
         }
     }
 
@@ -156,14 +156,14 @@ public class IMAPResponseTokenizer {
     public static final Token NIL = new Token(Token.NIL, null);
 
     private static final String WHITE = " \t\n\r";
-    // The list of delimiter characters we process when    
-    // handling parsing of ATOMs.  
+    // The list of delimiter characters we process when
+    // handling parsing of ATOMs.
     private static final String atomDelimiters = "(){}%*\"\\" + WHITE;
-    // this set of tokens is a slighly expanded set used for 
-    // specific response parsing.  When dealing with Body 
-    // section names, there are sub pieces to the name delimited 
-    // by "[", "]", ".", "<", ">" and SPACE, so reading these using 
-    // a superset of the ATOM processing makes for easier parsing. 
+    // this set of tokens is a slighly expanded set used for
+    // specific response parsing.  When dealing with Body
+    // section names, there are sub pieces to the name delimited
+    // by "[", "]", ".", "<", ">" and SPACE, so reading these using
+    // a superset of the ATOM processing makes for easier parsing.
     private static final String tokenDelimiters = "<>[].(){}%*\"\\" + WHITE;
 
     // the response data read from the connection
@@ -188,8 +188,8 @@ public class IMAPResponseTokenizer {
 
         return new String(response, pos, response.length - pos);
     }
-    
-    
+
+
     public Token next() throws MessagingException {
         return next(false);
     }
@@ -234,11 +234,11 @@ public class IMAPResponseTokenizer {
                 break;
             }
         }
-        
-        // Numeric tokens we store as a different type.  
-        String value = new String(response, start, pos - start); 
+
+        // Numeric tokens we store as a different type.
+        String value = new String(response, start, pos - start);
         try {
-            int intValue = Integer.parseInt(value); 
+            int intValue = Integer.parseInt(value);
             return new Token(Token.NUMERIC, value);
         } catch (NumberFormatException e) {
         }
@@ -253,8 +253,8 @@ public class IMAPResponseTokenizer {
      * @exception ResponseFormatException
      */
     private Token readToken(boolean nilAllowed, boolean expandedDelimiters) throws MessagingException {
-        String delimiters = expandedDelimiters ? tokenDelimiters : atomDelimiters; 
-        
+        String delimiters = expandedDelimiters ? tokenDelimiters : atomDelimiters;
+
         if (pos >= response.length) {
             return EOF;
         } else {
@@ -455,7 +455,7 @@ public class IMAPResponseTokenizer {
         } catch (NumberFormatException e) {
             throw new ResponseFormatException("Invalid literal length " + substring(lengthStart, lengthEnd));
         }
-        
+
         // step over the length
         pos = lengthEnd + 3;
 
@@ -466,7 +466,7 @@ public class IMAPResponseTokenizer {
 
         byte[] value = subarray(pos, pos + count);
         pos += count;
-        
+
         return value;
     }
 
@@ -574,8 +574,8 @@ public class IMAPResponseTokenizer {
                 && WHITE.indexOf(response[pos]) != -1)
             ;
     }
-    
-    
+
+
     /**
      * Ensure that the next token in the parsed response is a
      * '(' character.
@@ -623,7 +623,7 @@ public class IMAPResponseTokenizer {
         }
         return token.getValue();
     }
-    
+
 
     /**
      * Read an encoded string-valued token from the response.  A string
@@ -634,17 +634,17 @@ public class IMAPResponseTokenizer {
      * @exception ResponseFormatException
      */
     public String readEncodedString() throws MessagingException {
-        String value = readString(); 
-        return decode(value); 
+        String value = readString();
+        return decode(value);
     }
 
 
     /**
      * Decode a Base 64 encoded string value.
-     * 
+     *
      * @param original The original encoded string.
-     * 
-     * @return The decoded string. 
+     *
+     * @return The decoded string.
      * @exception MessagingException
      */
     public String decode(String original) throws MessagingException {
@@ -666,13 +666,13 @@ public class IMAPResponseTokenizer {
 
 
     /**
-     * Decode a section of an encoded string value. 
-     * 
+     * Decode a section of an encoded string value.
+     *
      * @param original The original source string.
      * @param index    The current working index.
      * @param result   The StringBuffer used for the decoded result.
-     * 
-     * @return The new index for the decoding operation. 
+     *
+     * @return The new index for the decoding operation.
      * @exception MessagingException
      */
     public static int decode(String original, int index, StringBuffer result) throws MessagingException {
@@ -798,9 +798,9 @@ public class IMAPResponseTokenizer {
      * @exception ResponseFormatException
      */
     public String readAtom() throws MessagingException {
-        return readAtom(false); 
+        return readAtom(false);
     }
-    
+
 
     /**
      * Read a string-valued token from the response, verifying this is an ATOM token.
@@ -828,7 +828,7 @@ public class IMAPResponseTokenizer {
      */
     public int readInteger() throws MessagingException {
         Token token = next();
-        return token.getInteger(); 
+        return token.getInteger();
     }
 
 
@@ -841,7 +841,7 @@ public class IMAPResponseTokenizer {
      */
     public int readLong() throws MessagingException {
         Token token = next();
-        return token.getInteger(); 
+        return token.getInteger();
     }
 
 
@@ -918,7 +918,7 @@ public class IMAPResponseTokenizer {
         String value = readStringOrNil();
         // this might be optional
         if (value == null) {
-            return null; 
+            return null;
         }
 
         try {
@@ -947,13 +947,13 @@ public class IMAPResponseTokenizer {
      * @exception ResponseFormatException
      */
     public InternetAddress readAddress() throws MessagingException {
-        // we recurse, expecting a null response back for sublists.  
+        // we recurse, expecting a null response back for sublists.
         if (peek().getType() != '(') {
-            return null; 
+            return null;
         }
-        
+
         // must start with a paren
-        checkLeftParen(); 
+        checkLeftParen();
 
         // personal information
         String personal = readStringOrNil();
@@ -1048,12 +1048,12 @@ public class IMAPResponseTokenizer {
         // we have a list, now parse it.
         while (notListEnd()) {
             // go read the next address.  If we had an address, add to the list.
-            // an address ITEM cannot be NIL inside the parens. 
+            // an address ITEM cannot be NIL inside the parens.
             InternetAddress address = readAddress();
             addresses.add(address);
         }
         // we need to skip over the peeked token.
-        checkRightParen(); 
+        checkRightParen();
         return (InternetAddress[])addresses.toArray(new InternetAddress[addresses.size()]);
     }
 
@@ -1099,7 +1099,7 @@ public class IMAPResponseTokenizer {
                     list.add(value);
                 }
             }
-            // step over the closing paren 
+            // step over the closing paren
             next();
 
             return list;
@@ -1123,20 +1123,20 @@ public class IMAPResponseTokenizer {
 
 
     /**
-     * Reads all remaining tokens and returns them as a list of strings. 
-     * NIL values are not supported. 
+     * Reads all remaining tokens and returns them as a list of strings.
+     * NIL values are not supported.
      *
      * @return A List containing all of the strings.
      * @exception ResponseFormatException
      */
     public List readStrings() throws MessagingException {
         List list = new ArrayList();
-        
+
         while (hasMore()) {
             String value = readString();
             list.add(value);
         }
-        return list; 
+        return list;
     }
 
 
@@ -1212,154 +1212,154 @@ public class IMAPResponseTokenizer {
     public byte[] readByteArray() throws MessagingException {
         return readData(true);
     }
-    
-    
+
+
     /**
-     * Determine what type of token encoding needs to be 
+     * Determine what type of token encoding needs to be
      * used for a string value.
-     * 
+     *
      * @param value  The string to test.
-     * 
-     * @return Either Token.ATOM, Token.QUOTEDSTRING, or 
+     *
+     * @return Either Token.ATOM, Token.QUOTEDSTRING, or
      *         Token.LITERAL, depending on the characters contained
      *         in the value.
      */
     static public int getEncoding(byte[] value) {
-        
-        // a null string always needs to be represented as a quoted literal. 
+
+        // a null string always needs to be represented as a quoted literal.
         if (value.length == 0) {
-            return Token.QUOTEDSTRING; 
+            return Token.QUOTEDSTRING;
         }
-        
+
         for (int i = 0; i < value.length; i++) {
-            int ch = value[i]; 
-            // make sure the sign extension is eliminated 
+            int ch = value[i];
+            // make sure the sign extension is eliminated
             ch = ch & 0xff;
-            // check first for any characters that would 
-            // disqualify a quoted string 
+            // check first for any characters that would
+            // disqualify a quoted string
             // NULL
             if (ch == 0x00) {
-                return Token.LITERAL; 
+                return Token.LITERAL;
             }
             // non-7bit ASCII
             if (ch > 0x7F) {
-                return Token.LITERAL; 
+                return Token.LITERAL;
             }
             // carriage return
             if (ch == '\r') {
-                return Token.LITERAL; 
+                return Token.LITERAL;
             }
-            // linefeed 
+            // linefeed
             if (ch == '\n') {
-                return Token.LITERAL; 
+                return Token.LITERAL;
             }
-            // now check for ATOM disqualifiers 
+            // now check for ATOM disqualifiers
             if (atomDelimiters.indexOf(ch) != -1) {
-                return Token.QUOTEDSTRING; 
+                return Token.QUOTEDSTRING;
             }
-            // CTL character.  We've already eliminated the high characters 
+            // CTL character.  We've already eliminated the high characters
             if (ch < 0x20) {
-                return Token.QUOTEDSTRING; 
+                return Token.QUOTEDSTRING;
             }
         }
-        // this can be an ATOM token 
+        // this can be an ATOM token
         return Token.ATOM;
     }
-    
-    
+
+
     /**
-     * Read a ContentType or ContentDisposition parameter 
+     * Read a ContentType or ContentDisposition parameter
      * list from an IMAP command response.
-     * 
-     * @return A ParameterList instance containing the parameters. 
+     *
+     * @return A ParameterList instance containing the parameters.
      * @exception MessagingException
      */
     public ParameterList readParameterList() throws MessagingException {
-        ParameterList params = new ParameterList(); 
-        
-        // read the tokens, taking NIL into account. 
-        Token token = next(true, false); 
-        
-        // just return an empty list if this is NIL 
+        ParameterList params = new ParameterList();
+
+        // read the tokens, taking NIL into account.
+        Token token = next(true, false);
+
+        // just return an empty list if this is NIL
         if (token.isType(token.NIL)) {
-            return params; 
+            return params;
         }
-        
-        // these are pairs of strings for each parameter value 
+
+        // these are pairs of strings for each parameter value
         while (notListEnd()) {
-            String name = readString(); 
-            String value = readString(); 
-            params.set(name, value); 
+            String name = readString();
+            String value = readString();
+            params.set(name, value);
         }
-        // we need to consume the list terminator 
-        checkRightParen(); 
-        return params; 
+        // we need to consume the list terminator
+        checkRightParen();
+        return params;
     }
-    
-    
+
+
     /**
      * Test if we have more data in the response buffer.
-     * 
-     * @return true if there are more tokens to process.  false if 
+     *
+     * @return true if there are more tokens to process.  false if
      *         we've reached the end of the stream.
      */
     public boolean hasMore() throws MessagingException {
-        // we need to eat any white space that might be in the stream.  
+        // we need to eat any white space that might be in the stream.
         eatWhiteSpace();
-        return pos < response.length; 
+        return pos < response.length;
     }
-    
-    
+
+
     /**
      * Tests if we've reached the end of a parenthetical
      * list in our parsing stream.
-     * 
-     * @return true if the next token will be a ')'.  false if the 
+     *
+     * @return true if the next token will be a ')'.  false if the
      *         next token is anything else.
      * @exception MessagingException
      */
     public boolean notListEnd() throws MessagingException {
         return peek().getType() != ')';
     }
-    
+
     /**
-     * Read a list of Flag values from an IMAP response, 
-     * returning a Flags instance containing the appropriate 
-     * pieces. 
-     * 
-     * @return A Flags instance with the flag values. 
+     * Read a list of Flag values from an IMAP response,
+     * returning a Flags instance containing the appropriate
+     * pieces.
+     *
+     * @return A Flags instance with the flag values.
      * @exception MessagingException
      */
     public Flags readFlagList() throws MessagingException {
         Flags flags = new Flags();
-        
-        // this should be a list here 
-        checkLeftParen(); 
-        
-        // run through the flag list 
+
+        // this should be a list here
+        checkLeftParen();
+
+        // run through the flag list
         while (notListEnd()) {
-            // the flags are a bit of a pain.  The flag names include "\" in the name, which 
-            // is not a character allowed in an atom.  This requires a bit of customized parsing 
-            // to handle this. 
-            Token token = next(); 
-            // flags can be specified as just atom tokens, so allow this as a user flag. 
+            // the flags are a bit of a pain.  The flag names include "\" in the name, which
+            // is not a character allowed in an atom.  This requires a bit of customized parsing
+            // to handle this.
+            Token token = next();
+            // flags can be specified as just atom tokens, so allow this as a user flag.
             if (token.isType(token.ATOM)) {
-                // append the atom as a raw name 
-                flags.add(token.getValue()); 
+                // append the atom as a raw name
+                flags.add(token.getValue());
             }
-            // all of the system flags start with a '\' followed by 
-            // an atom.  They also can be extension flags.  IMAP has a special 
-            // case of "\*" that we need to check for. 
+            // all of the system flags start with a '\' followed by
+            // an atom.  They also can be extension flags.  IMAP has a special
+            // case of "\*" that we need to check for.
             else if (token.isType('\\')) {
-                token = next(); 
-                // the next token is the real bit we need to process. 
+                token = next();
+                // the next token is the real bit we need to process.
                 if (token.isType('*')) {
-                    // this indicates USER flags are allowed. 
-                    flags.add(Flags.Flag.USER); 
+                    // this indicates USER flags are allowed.
+                    flags.add(Flags.Flag.USER);
                 }
-                // if this is an atom name, handle as a system flag 
+                // if this is an atom name, handle as a system flag
                 else if (token.isType(Token.ATOM)) {
-                    String name = token.getValue(); 
+                    String name = token.getValue();
                     if (name.equalsIgnoreCase("Seen")) {
                         flags.add(Flags.Flag.SEEN);
                     }
@@ -1379,72 +1379,72 @@ public class IMAPResponseTokenizer {
                         flags.add(Flags.Flag.FLAGGED);
                     }
                     else {
-                        // this is a server defined flag....just add the name with the 
-                        // flag thingy prepended. 
-                        flags.add("\\" + name); 
+                        // this is a server defined flag....just add the name with the
+                        // flag thingy prepended.
+                        flags.add("\\" + name);
                     }
                 }
                 else {
-                    throw new MessagingException("Invalid Flag: " + token.getValue()); 
+                    throw new MessagingException("Invalid Flag: " + token.getValue());
                 }
             }
             else {
-                throw new MessagingException("Invalid Flag: " + token.getValue()); 
+                throw new MessagingException("Invalid Flag: " + token.getValue());
             }
         }
-        
-        // step over this for good practice. 
-        checkRightParen(); 
-        
-        return flags; 
+
+        // step over this for good practice.
+        checkRightParen();
+
+        return flags;
     }
-    
-    
+
+
     /**
-     * Read a list of Flag values from an IMAP response, 
-     * returning a Flags instance containing the appropriate 
-     * pieces. 
-     * 
-     * @return A Flags instance with the flag values. 
+     * Read a list of Flag values from an IMAP response,
+     * returning a Flags instance containing the appropriate
+     * pieces.
+     *
+     * @return A Flags instance with the flag values.
      * @exception MessagingException
      */
     public List readSystemNameList() throws MessagingException {
-        List flags = new ArrayList(); 
-        
-        // this should be a list here 
-        checkLeftParen(); 
-        
-        // run through the flag list 
+        List flags = new ArrayList();
+
+        // this should be a list here
+        checkLeftParen();
+
+        // run through the flag list
         while (notListEnd()) {
-            // the flags are a bit of a pain.  The flag names include "\" in the name, which 
-            // is not a character allowed in an atom.  This requires a bit of customized parsing 
-            // to handle this. 
-            Token token = next(); 
-            // all of the system flags start with a '\' followed by 
-            // an atom.  They also can be extension flags.  IMAP has a special 
-            // case of "\*" that we need to check for. 
+            // the flags are a bit of a pain.  The flag names include "\" in the name, which
+            // is not a character allowed in an atom.  This requires a bit of customized parsing
+            // to handle this.
+            Token token = next();
+            // all of the system flags start with a '\' followed by
+            // an atom.  They also can be extension flags.  IMAP has a special
+            // case of "\*" that we need to check for.
             if (token.isType('\\')) {
-                token = next(); 
-                // if this is an atom name, handle as a system flag 
+                token = next();
+                // if this is an atom name, handle as a system flag
                 if (token.isType(Token.ATOM)) {
-                    // add the token value to the list WITH the 
-                    // flag indicator included.  The attributes method returns 
-                    // these flag indicators, so we need to include it. 
-                    flags.add("\\" + token.getValue()); 
+                    // add the token value to the list WITH the
+                    // flag indicator included.  The attributes method returns
+                    // these flag indicators, so we need to include it.
+                    flags.add("\\" + token.getValue());
                 }
                 else {
-                    throw new MessagingException("Invalid Flag: " + token.getValue()); 
+                    throw new MessagingException("Invalid Flag: " + token.getValue());
                 }
             }
             else {
-                throw new MessagingException("Invalid Flag: " + token.getValue()); 
+                throw new MessagingException("Invalid Flag: " + token.getValue());
             }
         }
-        
-        // step over this for good practice. 
-        checkRightParen(); 
-        
-        return flags; 
+
+        // step over this for good practice.
+        checkRightParen();
+
+        return flags;
     }
 }
 
