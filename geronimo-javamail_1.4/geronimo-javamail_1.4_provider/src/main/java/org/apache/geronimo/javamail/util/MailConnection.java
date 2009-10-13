@@ -463,27 +463,27 @@ public class MailConnection {
         // the individual names 
         String protocols = props.getProperty(MAIL_SSL_PROTOCOLS); 
         if (protocols != null) {
-            ArrayList<String> list = new ArrayList<String>(); 
+            ArrayList list = new ArrayList(); 
             StringTokenizer t = new StringTokenizer(protocols); 
             
             while (t.hasMoreTokens()) {
                 list.add(t.nextToken()); 
             }
             
-            ((SSLSocket)socket).setEnabledProtocols(list.toArray(new String[list.size()])); 
+            ((SSLSocket)socket).setEnabledProtocols((String[])list.toArray(new String[list.size()])); 
         }
         
         // and do the same for any cipher suites 
         String suites = props.getProperty(MAIL_SSL_CIPHERSUITES); 
         if (suites != null) {
-            ArrayList<String> list = new ArrayList<String>(); 
+            ArrayList list = new ArrayList(); 
             StringTokenizer t = new StringTokenizer(suites); 
             
             while (t.hasMoreTokens()) {
                 list.add(t.nextToken()); 
             }
             
-            ((SSLSocket)socket).setEnabledCipherSuites(list.toArray(new String[list.size()])); 
+            ((SSLSocket)socket).setEnabledCipherSuites((String[])list.toArray(new String[list.size()])); 
         }
     }
 
