@@ -24,4 +24,5 @@ text/xml;;      x-java-content-handler=org.apache.geronimo.javamail.handlers.Tex
 image/gif;;     x-java-content-handler=org.apache.geronimo.javamail.handlers.ImageGifHandler
 image/jpeg;;    x-java-content-handler=org.apache.geronimo.javamail.handlers.ImageJpegHandler
 
-multipart/*;;   x-java-content-handler=org.apache.geronimo.javamail.handlers.MultipartHandler     
+multipart/*;;   x-java-content-handler=org.apache.geronimo.javamail.handlers.MultipartHandler
+message/rfc822;; x-java-content-handler=org.apache.geronimo.javamail.handlers.RFC822MessageHandler
