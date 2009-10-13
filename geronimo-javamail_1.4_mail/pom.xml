@@ -68,28 +68,22 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-<artifactSet>
-<includes>
-<include>
-org.apache.geronimo.specs:geronimo-javamail_1.4_spec
-</include>
-<include>
-org.apache.geronimo.javamail:geronimo-javamail_1.4_provider
-</include>
-<include>${project.groupId}:${project.artifactId}</include>
-</includes>
-</artifactSet>
-<filters>
-<filter>
-<artifact>
-org.apache.geronimo.specs:geronimo-javamail_1.4_spec
-</artifact>
-<excludes>
-<exclude>javax/**</exclude>
-<exclude>org/**</exclude>
-</excludes>
-</filter>
-</filters>
+                            <artifactSet>
+                                <includes>
+                                    <include>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</include>
+                                    <include>org.apache.geronimo.javamail:geronimo-javamail_1.4_provider</include>
+                                    <include>${project.groupId}:${project.artifactId}</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</artifact>
+                                    <excludes>
+                                        <exclude>javax/**</exclude>
+                                        <exclude>org/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                             <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                             <createDependencyReducedPom>true</createDependencyReducedPom>
                         </configuration>
