@@ -48,7 +48,7 @@
     </scm>
 
     <properties>
-        <siteId>javamail</siteId>
+        <siteId>javamail/${artifactId}</siteId>
         <projectName>Apache Geronimo Javamail Bundle</projectName>
     </properties>
 
