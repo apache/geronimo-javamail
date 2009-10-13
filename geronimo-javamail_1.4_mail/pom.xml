@@ -31,6 +31,7 @@
     </parent>
 
     <artifactId>geronimo-javamail_1.4_mail</artifactId>
+    <packaging>bundle</packaging>
     <name>Geronimo JavaMail 1.4 :: Mail</name>
 
     <dependencies>
@@ -48,6 +49,16 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Export-Package>javax.mail*;version=1.4</Export-Package>
+                    </instructions>
+                    <unpackBundle>true</unpackBundle>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
@@ -56,6 +67,32 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+<artifactSet>
+<includes>
+<include>
+org.apache.geronimo.specs:geronimo-javamail_1.4_spec
+</include>
+<include>
+org.apache.geronimo.javamail:geronimo-javamail_1.4_provider
+</include>
+<include>${project.groupId}:${project.artifactId}</include>
+</includes>
+</artifactSet>
+<filters>
+<filter>
+<artifact>
+org.apache.geronimo.specs:geronimo-javamail_1.4_spec
+</artifact>
+<excludes>
+<exclude>javax/**</exclude>
+<exclude>org/**</exclude>
+</excludes>
+</filter>
+</filters>
+                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
