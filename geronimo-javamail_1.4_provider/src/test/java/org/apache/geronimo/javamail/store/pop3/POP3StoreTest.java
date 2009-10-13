@@ -41,7 +41,7 @@ public class POP3StoreTest extends TestCase {
     private GreenMail greenMail;
     private Message[] messages;
     
-    @Override
+    //@Override
     protected void setUp() throws Exception {
         // Setup GreenMail
         greenMail = new GreenMail(ServerSetupTest.SMTP_POP3);       
@@ -69,7 +69,7 @@ public class POP3StoreTest extends TestCase {
         assertEquals(2, messages.length);
     }
     
-    @Override
+    //@Override
     protected void tearDown() throws Exception {
         greenMail.stop();
     }

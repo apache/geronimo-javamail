@@ -25,9 +25,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.geronimo.genesis.config</groupId>
-        <artifactId>project-config</artifactId>
-        <version>1.5</version>
+        <groupId>org.apache.geronimo.genesis</groupId>
+        <artifactId>genesis-java1.4-flava</artifactId>
+        <version>2.0</version>
     </parent>
 
     <groupId>org.apache.geronimo.javamail</groupId>
@@ -56,8 +56,8 @@
     
     <distributionManagement>
         <site>
-            <id>geronimo-website</id>
-            <url>${staging.siteURL}/${siteId}/${version}</url>
+            <id>apache-website</id>
+            <url>${site.deploy.url}/maven/${siteId}/${version}</url>
         </site>
     </distributionManagement>
 
