@@ -80,7 +80,6 @@
                                     <artifact>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</artifact>
                                     <excludes>
                                         <exclude>javax/**</exclude>
-                                        <exclude>org/**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
