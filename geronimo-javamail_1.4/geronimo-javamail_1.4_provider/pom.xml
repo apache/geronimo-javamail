@@ -31,6 +31,7 @@
     </parent>
 
     <artifactId>geronimo-javamail_1.4_provider</artifactId>
+    <packaging>bundle</packaging>
     <name>Geronimo JavaMail 1.4 :: Provider</name>
 
     <dependencies>
@@ -45,7 +46,7 @@
             <artifactId>geronimo-javamail_1.4_spec</artifactId>
             <scope>provided</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -74,5 +75,37 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Private-Package>
+                            org.apache.geronimo.javamail.util,
+                            org.apache.geronimo.javamail.authentication
+                        </Private-Package>
+                        <Export-Package>
+                            org.apache.geronimo.javamail.store*;version=1.4,
+                            org.apache.geronimo.javamail.transport*;version=1.4,
+                        </Export-Package>
+                        <Import-Package>
+                            javax.activation,
+                            javax.mail*,
+                            org.apache.geronimo.mail.util,
+                            org.apache.geronimo.javamail.handlers*;version=1.4
+                            javax.imageio*;resolution:="optional",
+                            javax.net.ssl*;resolution:="optional",
+                            javax.security.sasl*;resolution:="optional",
+                            javax.security.auth.callback*;resolution:="optional"
+                        </Import-Package>
+                    </instructions>
+                    <unpackBundle>true</unpackBundle>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
