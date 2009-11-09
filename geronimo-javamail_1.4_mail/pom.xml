@@ -70,6 +70,13 @@
                                     <artifact>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</artifact>
                                     <excludes>
                                         <exclude>javax/**</exclude>
+                                        <exclude>org/apache/geronimo/mail/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>org.apache.geronimo.javamail:geronimo-javamail_1.4_provider</artifact>
+                                    <excludes>
+                                        <exclude>org/apache/geronimo/javamail/**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
@@ -84,8 +91,25 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Export-Package>javax.mail*;version=1.4</Export-Package>
-                        <Import-Package>!org.apache.geronimo.mail.util,javax.activation,javax.mail*</Import-Package>
+                        <Private-Package>
+                            org.apache.geronimo.mail.util,
+                            org.apache.geronimo.javamail.util,
+                            org.apache.geronimo.javamail.authentication
+                        </Private-Package>
+                        <Export-Package>
+                            javax.mail*;version=1.4,
+                            org.apache.geronimo.javamail.store*;version=1.4,
+                            org.apache.geronimo.javamail.transport*;version=1.4,
+                            org.apache.geronimo.javamail.handlers;version=1.4
+                        </Export-Package>
+                        <Import-Package>
+                            javax.activation,
+                            javax.mail*,
+                            javax.imageio*;resolution:="optional",
+                            javax.net.ssl*;resolution:="optional",
+                            javax.security.sasl*;resolution:="optional",
+                            javax.security.auth.callback*;resolution:="optional"
+                        </Import-Package>
                     </instructions>
                     <unpackBundle>true</unpackBundle>
                 </configuration>

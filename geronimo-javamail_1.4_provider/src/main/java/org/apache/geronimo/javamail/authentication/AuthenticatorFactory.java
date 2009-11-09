@@ -21,50 +21,50 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.geronimo.javamail.util.ProtocolProperties; 
+import org.apache.geronimo.javamail.util.ProtocolProperties;
 
 public class AuthenticatorFactory {
-    // the list of authentication mechanisms we have direct support for.  Others come from 
-    // SASL, if it's available. 
-    
+    // the list of authentication mechanisms we have direct support for.  Others come from
+    // SASL, if it's available.
+
     public static final String AUTHENTICATION_PLAIN = "PLAIN";
     public static final String AUTHENTICATION_LOGIN = "LOGIN";
     public static final String AUTHENTICATION_CRAMMD5 = "CRAM-MD5";
     public static final String AUTHENTICATION_DIGESTMD5 = "DIGEST-MD5";
-     
+
     static public ClientAuthenticator getAuthenticator(ProtocolProperties props, List mechanisms, String host, String username, String password, String authId, String realm)
     {
-        // if the authorization id isn't given, then this is the same as the logged in user name. 
+        // if the authorization id isn't given, then this is the same as the logged in user name.
         if (authId == null) {
-            authId = username; 
+            authId = username;
         }
-        
-        // if SASL is enabled, try getting a SASL authenticator first 
+
+        // if SASL is enabled, try getting a SASL authenticator first
         if (props.getBooleanProperty("sasl.enable", false)) {
-            // we need to convert the mechanisms map into an array of strings for SASL. 
-            String [] mechs = (String [])mechanisms.toArray(new String[mechanisms.size()]); 
-            
+            // we need to convert the mechanisms map into an array of strings for SASL.
+            String [] mechs = (String [])mechanisms.toArray(new String[mechanisms.size()]);
+
             try {
-                // need to try to load this using reflection since it has references to 
-                // the SASL API.  That's only available with 1.5 or later. 
-                Class authenticatorClass = Class.forName("org.apache.geronimo.javamal.authentication.SASLAuthenticator"); 
+                // need to try to load this using reflection since it has references to
+                // the SASL API.  That's only available with 1.5 or later.
+                Class authenticatorClass = Class.forName("org.apache.geronimo.javamail.authentication.SASLAuthenticator");
                 Constructor c = authenticatorClass.getConstructor(new Class[] {
-                    (new String[0]).getClass(), 
-                    Properties.class, 
-                    String.class, 
-                    String.class, 
-                    String.class, 
-                    String.class, 
-                    String.class, 
+                    (new String[0]).getClass(),
+                    Properties.class,
+                    String.class,
+                    String.class,
+                    String.class,
+                    String.class,
+                    String.class,
                     String.class
-                }); 
-                
+                });
+
                 Object[] args = { mechs, props.getProperties(), props.getProtocol(), host, realm, authId, username, password };
-                
-                return (ClientAuthenticator)c.newInstance(args); 
+
+                return (ClientAuthenticator)c.newInstance(args);
             } catch (Throwable e) {
-                // Any exception is likely because we're running on 1.4 and can't use the Sasl API.  
-                // just ignore and use our fallback implementations. 
+                // Any exception is likely because we're running on 1.4 and can't use the Sasl API.
+                // just ignore and use our fallback implementations.
             }
         }
 
@@ -85,4 +85,4 @@ public class AuthenticatorFactory {
         }
     }
 }
-     
+
