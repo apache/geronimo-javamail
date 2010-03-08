@@ -39,68 +39,60 @@
             <groupId>org.apache.geronimo.javamail</groupId>
             <artifactId>geronimo-javamail_1.4_provider</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-javamail_1.4_spec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-activation_1.1_spec</artifactId>
+            <version>1.0.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+            <version>4.2.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.compendium</artifactId>
+            <version>4.2.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-osgi-registry</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <artifactSet>
-                                <includes>
-                                    <include>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</include>
-                                    <include>org.apache.geronimo.javamail:geronimo-javamail_1.4_provider</include>
-                                    <include>${project.groupId}:${project.artifactId}</include>
-                                </includes>
-                            </artifactSet>
-                            <filters>
-                                <filter>
-                                    <artifact>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</artifact>
-                                    <excludes>
-                                        <exclude>javax/**</exclude>
-                                        <exclude>org/apache/geronimo/mail/**</exclude>
-                                    </excludes>
-                                </filter>
-                                <filter>
-                                    <artifact>org.apache.geronimo.javamail:geronimo-javamail_1.4_provider</artifact>
-                                    <excludes>
-                                        <exclude>org/apache/geronimo/javamail/**</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
-                            <createDependencyReducedPom>true</createDependencyReducedPom>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
+                        <Bundle-SymbolicName>${groupId}.${artifactId};singleton=true</Bundle-SymbolicName>
+                        <Specification-Title>JSR-919 Javamail API 1.4 merged bundle</Specification-Title>
+                        <Specification-Vendor>Sun Microsystems, Inc.</Specification-Vendor>
+                        <Specification-Version>1.4</Specification-Version>
                         <Private-Package>
+                            org.apache.geronimo.osgi.locator,
+                            org.apache.geronimo.mail,
                             org.apache.geronimo.mail.util,
                             org.apache.geronimo.javamail.util,
                             org.apache.geronimo.javamail.authentication
                         </Private-Package>
                         <Export-Package>
                             javax.mail*;version=1.4,
+                            org.apache.geronimo.javamail.handlers*;version=1.4,
                             org.apache.geronimo.javamail.store*;version=1.4,
                             org.apache.geronimo.javamail.transport*;version=1.4,
-                            org.apache.geronimo.javamail.handlers;version=1.4
+                            org.apache.geronimo.mail.handlers*;version=1.4,
                         </Export-Package>
                         <Import-Package>
                             javax.activation,
@@ -108,10 +100,11 @@
                             javax.imageio*;resolution:="optional",
                             javax.net.ssl*;resolution:="optional",
                             javax.security.sasl*;resolution:="optional",
-                            javax.security.auth.callback*;resolution:="optional"
+                            javax.security.auth.callback*;resolution:="optional",
+                            *
                         </Import-Package>
+                        <Bundle-Activator>org.apache.geronimo.mail.Activator</Bundle-Activator>
                     </instructions>
-                    <unpackBundle>true</unpackBundle>
                 </configuration>
             </plugin>
         </plugins>
