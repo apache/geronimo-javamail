@@ -83,6 +83,10 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
+                        <Bundle-SymbolicName>${groupId}.${artifactId};singleton=true</Bundle-SymbolicName>
+                        <Specification-Title>JSR-919 Javamail API 1.4 provider bundle</Specification-Title>
+                        <Specification-Vendor>Sun Microsystems, Inc.</Specification-Vendor>
+                        <Specification-Version>1.4</Specification-Version>
                         <Private-Package>
                             org.apache.geronimo.javamail.util,
                             org.apache.geronimo.javamail.authentication
@@ -90,12 +94,12 @@
                         <Export-Package>
                             org.apache.geronimo.javamail.store*;version=1.4,
                             org.apache.geronimo.javamail.transport*;version=1.4,
+                            org.apache.geronimo.javamail.handlers*;version=1.4
                         </Export-Package>
                         <Import-Package>
                             javax.activation,
                             javax.mail*,
                             org.apache.geronimo.mail.util,
-                            org.apache.geronimo.javamail.handlers*;version=1.4
                             javax.imageio*;resolution:="optional",
                             javax.net.ssl*;resolution:="optional",
                             javax.security.sasl*;resolution:="optional",
