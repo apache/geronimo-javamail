@@ -72,6 +72,55 @@
     <build>
         <plugins>
             <plugin>
+                <!-- NOTE:  The shade build step is an important step in getting the bundle
+                     built correctly.  This step copies all of the OSGI-INF/services and META-INF/*
+                     resources into the local build target, and then the bundle plugin merges those
+                     resources with the class files pulled from the dependency jars to create the
+                     final result.  Without this extra step, only the class files make it into the
+                     final bundle.-->
+
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <includes>
+                                    <include>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</include>
+                                    <include>org.apache.geronimo.javamail:geronimo-javamail_1.4_provider</include>
+                                    <include>${project.groupId}:${project.artifactId}</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</artifact>
+                                    <!-- All of the class files need to be excluded to avoid bnd errors about split packages -->
+                                    <excludes>
+                                        <exclude>javax/**</exclude>
+                                        <exclude>org/apache/geronimo/mail/**</exclude>
+                                        <exclude>org/apache/geronimo/osgi/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>org.apache.geronimo.javamail:geronimo-javamail_1.4_provider</artifact>
+                                    <excludes>
+                                        <exclude>org/apache/geronimo/javamail/**</exclude>
+                                        <exclude>org/apache/geronimo/osgi/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
