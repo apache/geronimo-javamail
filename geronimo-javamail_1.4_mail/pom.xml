@@ -150,6 +150,7 @@
                             javax.net.ssl*;resolution:="optional",
                             javax.security.sasl*;resolution:="optional",
                             javax.security.auth.callback*;resolution:="optional",
+                            org.apache.geronimo.osgi.registry.api;resolution:="optional",
                             *
                         </Import-Package>
                         <Bundle-Activator>org.apache.geronimo.mail.Activator</Bundle-Activator>
