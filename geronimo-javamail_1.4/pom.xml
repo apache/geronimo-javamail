@@ -35,7 +35,7 @@
     <name>Geronimo JavaMail 1.4</name>
     <packaging>pom</packaging>
 
-    <version>1.0.9-SNAPSHOT</version>
+    <version>1.0.8-SNAPSHOT</version>
 
     <description>
         Geronimmo JavaMail Bundle.
@@ -66,13 +66,13 @@
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-activation_1.1_spec</artifactId>
-                <version>1.0.4-SNAPSHOT</version>
+                <version>1.0.3-SNAPSHOT</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-javamail_1.4_spec</artifactId>
-                <version>1.0.8-SNAPSHOT</version>
+                <version>1.0.7-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -86,7 +86,7 @@
             <dependency>
                 <groupId>org.apache.geronimo.javamail</groupId>
                 <artifactId>geronimo-javamail_1.4_provider</artifactId>
-                <version>1.0.9-SNAPSHOT</version>
+                <version>1.0.8-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
