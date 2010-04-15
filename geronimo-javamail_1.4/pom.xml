@@ -35,16 +35,16 @@
     <name>Geronimo JavaMail 1.4</name>
     <packaging>pom</packaging>
 
-    <version>1.8-SNAPSHOT</version>
+    <version>1.0.8</version>
 
     <description>
         Geronimmo JavaMail Bundle.
     </description>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.4</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.4</developerConnection>
-        <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/geronimo-javamail_1.4</url>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/tags/geronimo-javamail_1.4-1.0.8</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/tags/geronimo-javamail_1.4-1.0.8</developerConnection>
+        <url>http://svn.apache.org/viewvc/geronimo/javamail/tags/geronimo-javamail_1.4-1.0.8</url>
     </scm>
 
     <properties>
@@ -53,7 +53,7 @@
     </properties>
 
     <url>http://geronimo.apache.org/maven/${siteId}/${version}</url>
-    
+
     <distributionManagement>
         <site>
             <id>apache-website</id>
@@ -66,27 +66,27 @@
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-activation_1.1_spec</artifactId>
-                <version>1.0.2</version>
+                <version>1.0.3</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-javamail_1.4_spec</artifactId>
-                <version>1.7-SNAPSHOT</version>
+                <version>1.0.7</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>3.8.2</version>
             </dependency>
-            
+
             <!-- INTERNAL -->
-            
+
             <dependency>
                 <groupId>org.apache.geronimo.javamail</groupId>
                 <artifactId>geronimo-javamail_1.4_provider</artifactId>
-                <version>1.8-SNAPSHOT</version>
+                <version>1.0.8</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -118,7 +118,7 @@
                                 <requireJavaVersion>
                                     <version>[1.5,)</version>
                                 </requireJavaVersion>
-                                
+
                                 <!-- Allow any Maven >= 2.0.5 -->
                                 <requireMavenVersion>
                                     <version>[2.0.5,)</version>
