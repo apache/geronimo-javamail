@@ -20,62 +20,63 @@ package org.apache.geronimo.javamail.store.imap.connection;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.mail.MessagingException; 
-import javax.mail.event.FolderEvent; 
+import javax.mail.MessagingException;
+import javax.mail.event.FolderEvent;
 
 import org.apache.geronimo.javamail.store.imap.connection.IMAPResponseTokenizer.Token;
 import org.apache.geronimo.javamail.util.ConnectionException;
 
 public class IMAPResponseStream {
-    protected final int BUFFER_SIZE = 1024;   
-    
+    protected final int BUFFER_SIZE = 1024;
+
     // our source input stream
     protected InputStream in;
-    // The response buffer 
-    IMAPResponseBuffer out; 
-    // the buffer array 
-    protected byte[] buffer = new byte[BUFFER_SIZE]; 
-    // the current buffer position 
-    int position; 
-    // the current buffer read length 
-    int length; 
+    // The response buffer
+    IMAPResponseBuffer out;
+    // the buffer array
+    protected byte[] buffer = new byte[BUFFER_SIZE];
+    // the current buffer position
+    int position;
+    // the current buffer read length
+    int length;
 
     public IMAPResponseStream(InputStream in) {
         this.in = in;
         out = new IMAPResponseBuffer();
     }
-    
+
     public int read() throws IOException {
-        // if we can't read any more, that's an EOF condition. 
+        // if we can't read any more, that's an EOF condition.
         if (!fillBufferIfNeeded()) {
-            return -1; 
+            return -1;
         }
-        // just grab the next character 
-        return buffer[position++]; 
+        // just grab the next character
+        return buffer[position++];
     }
-    
+
     protected boolean fillBufferIfNeeded() throws IOException {
         // used up all of the data in the buffer?
         if (position >= length) {
-            int readLength = 0; 
-            // a read from a network connection can return 0 bytes, 
-            // so we need to be prepared to handle a spin loop.  
+            int readLength = 0;
+            // a read from a network connection can return 0 bytes,
+            // so we need to be prepared to handle a spin loop.
             while (readLength == 0) {
-                readLength = in.read(buffer, 0, buffer.length); 
+                readLength = in.read(buffer, 0, buffer.length);
             }
-            // we may have hit the EOF.  Indicate the read failure   
+            // we may have hit the EOF.  Indicate the read failure
             if (readLength == -1) {
-                return false; 
+                return false;
             }
-            // set our new buffer positions. 
-            position = 0; 
-            length = readLength; 
+            // set our new buffer positions.
+            position = 0;
+            length = readLength;
         }
-        return true; 
+        return true;
     }
 
 
@@ -86,180 +87,180 @@ public class IMAPResponseStream {
      * @return A parsed IMAPResponse item using the response data.
      * @exception MessagingException
      */
-    public IMAPResponse readResponse() throws MessagingException  
-      {  
-        // reset our accumulator 
-        out.reset(); 
+    public IMAPResponse readResponse() throws MessagingException
+      {
+        // reset our accumulator
+        out.reset();
         // now read a buffer of data
         byte[] data = readData();
-        
+
         // and create a tokenizer for parsing this down.
         IMAPResponseTokenizer tokenizer = new IMAPResponseTokenizer(data);
         // get the first token.
         Token token = tokenizer.next();
-        
-        int type = token.getType(); 
-        
-        // a continuation response.  This will terminate a response set. 
+
+        int type = token.getType();
+
+        // a continuation response.  This will terminate a response set.
         if (type == Token.CONTINUATION) {
-            return new IMAPContinuationResponse(data); 
+            return new IMAPContinuationResponse(data);
         }
-        // unsolicited response.  There are multiple forms of these, which might actually be 
-        // part of the response for the last issued command. 
+        // unsolicited response.  There are multiple forms of these, which might actually be
+        // part of the response for the last issued command.
         else if (type == Token.UNTAGGED) {
             // step to the next token, which will give us the type
-            token = tokenizer.next(); 
-            // if the token is numeric, then this is a size response in the 
+            token = tokenizer.next();
+            // if the token is numeric, then this is a size response in the
             // form "* nn type"
             if (token.isType(Token.NUMERIC)) {
-                int size = token.getInteger(); 
-                
-                token = tokenizer.next(); 
-                
-                String keyword = token.getValue(); 
-                
-                // FETCH responses require fairly complicated parsing.  Other 
-                // size/message updates are fairly generic. 
+                int size = token.getInteger();
+
+                token = tokenizer.next();
+
+                String keyword = token.getValue();
+
+                // FETCH responses require fairly complicated parsing.  Other
+                // size/message updates are fairly generic.
                 if (keyword.equals("FETCH")) {
-                    return new IMAPFetchResponse(size, data, tokenizer); 
+                    return new IMAPFetchResponse(size, data, tokenizer);
                 }
-                return new IMAPSizeResponse(keyword, size, data); 
+                return new IMAPSizeResponse(keyword, size, data);
             }
-            
-            // this needs to be an ATOM type, which will tell us what format this untagged 
-            // response is in.  There are many different untagged formats, some general, some 
-            // specific to particular command types. 
+
+            // this needs to be an ATOM type, which will tell us what format this untagged
+            // response is in.  There are many different untagged formats, some general, some
+            // specific to particular command types.
             if (token.getType() != Token.ATOM) {
-                throw new MessagingException("Unknown server response: " + new String(data)); 
+                throw new MessagingException("Unknown server response: " + new String(data, Charset.forName("ISO8859-1")));
             }
-            
-            String keyword = token.getValue(); 
-            // many response are in the form "* OK [keyword value] message". 
+
+            String keyword = token.getValue();
+            // many response are in the form "* OK [keyword value] message".
             if (keyword.equals("OK")) {
-                return parseUntaggedOkResponse(data, tokenizer); 
+                return parseUntaggedOkResponse(data, tokenizer);
             }
-            // preauth status response 
+            // preauth status response
             else if (keyword.equals("PREAUTH")) {
-                return new IMAPServerStatusResponse("PREAUTH", tokenizer.getRemainder(), data); 
+                return new IMAPServerStatusResponse("PREAUTH", tokenizer.getRemainder(), data);
             }
-            // preauth status response 
+            // preauth status response
             else if (keyword.equals("BYE")) {
-                return new IMAPServerStatusResponse("BYE", tokenizer.getRemainder(), data); 
+                return new IMAPServerStatusResponse("BYE", tokenizer.getRemainder(), data);
             }
             else if (keyword.equals("BAD")) {
-                // these are generally ignored. 
-                return new IMAPServerStatusResponse("BAD", tokenizer.getRemainder(), data); 
+                // these are generally ignored.
+                return new IMAPServerStatusResponse("BAD", tokenizer.getRemainder(), data);
             }
             else if (keyword.equals("NO")) {
-                // these are generally ignored. 
-                return new IMAPServerStatusResponse("NO", tokenizer.getRemainder(), data); 
+                // these are generally ignored.
+                return new IMAPServerStatusResponse("NO", tokenizer.getRemainder(), data);
             }
-            // a complex CAPABILITY response 
+            // a complex CAPABILITY response
             else if (keyword.equals("CAPABILITY")) {
-                return new IMAPCapabilityResponse(tokenizer, data); 
+                return new IMAPCapabilityResponse(tokenizer, data);
             }
-            // a complex LIST response 
+            // a complex LIST response
             else if (keyword.equals("LIST")) {
-                return new IMAPListResponse("LIST", data, tokenizer); 
+                return new IMAPListResponse("LIST", data, tokenizer);
             }
-            // a complex FLAGS response 
+            // a complex FLAGS response
             else if (keyword.equals("FLAGS")) {
-                // parse this into a flags set. 
-                return new IMAPFlagsResponse(data, tokenizer); 
+                // parse this into a flags set.
+                return new IMAPFlagsResponse(data, tokenizer);
             }
             // a complex LSUB response (identical in format to LIST)
             else if (keyword.equals("LSUB")) {
-                return new IMAPListResponse("LSUB", data, tokenizer); 
+                return new IMAPListResponse("LSUB", data, tokenizer);
             }
-            // a STATUS response, which will contain a list of elements 
+            // a STATUS response, which will contain a list of elements
             else if (keyword.equals("STATUS")) {
-                return new IMAPStatusResponse(data, tokenizer); 
+                return new IMAPStatusResponse(data, tokenizer);
             }
-            // SEARCH requests return an variable length list of message matches. 
+            // SEARCH requests return an variable length list of message matches.
             else if (keyword.equals("SEARCH")) {
-                return new IMAPSearchResponse(data, tokenizer); 
+                return new IMAPSearchResponse(data, tokenizer);
             }
-            // ACL requests return an variable length list of ACL values . 
+            // ACL requests return an variable length list of ACL values .
             else if (keyword.equals("ACL")) {
-                return new IMAPACLResponse(data, tokenizer); 
+                return new IMAPACLResponse(data, tokenizer);
             }
-            // LISTRIGHTS requests return a variable length list of RIGHTS values . 
+            // LISTRIGHTS requests return a variable length list of RIGHTS values .
             else if (keyword.equals("LISTRIGHTS")) {
-                return new IMAPListRightsResponse(data, tokenizer); 
+                return new IMAPListRightsResponse(data, tokenizer);
             }
-            // MYRIGHTS requests return a list of user rights for a mailbox name. 
+            // MYRIGHTS requests return a list of user rights for a mailbox name.
             else if (keyword.equals("MYRIGHTS")) {
-                return new IMAPMyRightsResponse(data, tokenizer); 
+                return new IMAPMyRightsResponse(data, tokenizer);
             }
-            // QUOTAROOT requests return a list of mailbox quota root names  
+            // QUOTAROOT requests return a list of mailbox quota root names
             else if (keyword.equals("QUOTAROOT")) {
-                return new IMAPQuotaRootResponse(data, tokenizer); 
+                return new IMAPQuotaRootResponse(data, tokenizer);
             }
-            // QUOTA requests return a list of quota values for a root name  
+            // QUOTA requests return a list of quota values for a root name
             else if (keyword.equals("QUOTA")) {
-                return new IMAPQuotaResponse(data, tokenizer); 
+                return new IMAPQuotaResponse(data, tokenizer);
             }
             else if (keyword.equals("NAMESPACE")) {
-                return new IMAPNamespaceResponse(data, tokenizer); 
+                return new IMAPNamespaceResponse(data, tokenizer);
             }
         }
-        // begins with a word, this should be the tagged response from the last command. 
+        // begins with a word, this should be the tagged response from the last command.
         else if (type == Token.ATOM) {
-            String tag = token.getValue(); 
-            token = tokenizer.next(); 
-            String status = token.getValue(); 
-            // primary information in one of these is the status field, which hopefully 
+            String tag = token.getValue();
+            token = tokenizer.next();
+            String status = token.getValue();
+            // primary information in one of these is the status field, which hopefully
             // is 'OK'
-            return new IMAPTaggedResponse(tag, status, tokenizer.getRemainder(), data); 
+            return new IMAPTaggedResponse(tag, status, tokenizer.getRemainder(), data);
         }
-        throw new MessagingException("Unknown server response: " + new String(data)); 
-    }
-    
-    /**
-     * Parse an unsolicited OK status response.  These 
-     * responses are of the form:
-     * 
-     * * OK [keyword arguments ...] message
-     * 
-     * The part in the brackets are optional, but 
-     * most OK messages will have some sort of update.
-     * 
-     * @param data      The raw message data
-     * @param tokenizer The tokenizer being used for this message.
-     * 
-     * @return An IMAPResponse instance for this message. 
-     */
-    private IMAPResponse parseUntaggedOkResponse(byte [] data, IMAPResponseTokenizer tokenizer) throws MessagingException {
-        Token token = tokenizer.peek(); 
-        // we might have an optional value here 
-        if (token.getType() != '[') {
-            // this has no tagging item, so there's nothing to be processed 
-            // later. 
-            return new IMAPOkResponse("OK", null, tokenizer.getRemainder(), data); 
-        }
-        // skip over the "[" token
-        tokenizer.next(); 
-        token = tokenizer.next(); 
-        String keyword = token.getValue(); 
-        
-        // Permanent flags gets special handling 
-        if (keyword.equals("PERMANENTFLAGS")) {
-            return new IMAPPermanentFlagsResponse(data, tokenizer); 
-        }
-        
-        ArrayList arguments = new ArrayList(); 
-        
-        // strip off all of the argument tokens until the "]" list terminator. 
-        token = tokenizer.next(); 
-        while (token.getType() != ']') {
-            arguments.add(token); 
-            token = tokenizer.next(); 
-        }
-        // this has a tagged keyword and arguments that will be processed later. 
-        return new IMAPOkResponse(keyword, arguments, tokenizer.getRemainder(), data); 
+        throw new MessagingException("Unknown server response: " + new String(data, Charset.forName("ISO8859-1")));
     }
 
-    
+    /**
+     * Parse an unsolicited OK status response.  These
+     * responses are of the form:
+     *
+     * * OK [keyword arguments ...] message
+     *
+     * The part in the brackets are optional, but
+     * most OK messages will have some sort of update.
+     *
+     * @param data      The raw message data
+     * @param tokenizer The tokenizer being used for this message.
+     *
+     * @return An IMAPResponse instance for this message.
+     */
+    private IMAPResponse parseUntaggedOkResponse(byte [] data, IMAPResponseTokenizer tokenizer) throws MessagingException {
+        Token token = tokenizer.peek();
+        // we might have an optional value here
+        if (token.getType() != '[') {
+            // this has no tagging item, so there's nothing to be processed
+            // later.
+            return new IMAPOkResponse("OK", null, tokenizer.getRemainder(), data);
+        }
+        // skip over the "[" token
+        tokenizer.next();
+        token = tokenizer.next();
+        String keyword = token.getValue();
+
+        // Permanent flags gets special handling
+        if (keyword.equals("PERMANENTFLAGS")) {
+            return new IMAPPermanentFlagsResponse(data, tokenizer);
+        }
+
+        ArrayList arguments = new ArrayList();
+
+        // strip off all of the argument tokens until the "]" list terminator.
+        token = tokenizer.next();
+        while (token.getType() != ']') {
+            arguments.add(token);
+            token = tokenizer.next();
+        }
+        // this has a tagged keyword and arguments that will be processed later.
+        return new IMAPOkResponse(keyword, arguments, tokenizer.getRemainder(), data);
+    }
+
+
     /**
      * Read a "line" of server response data.  An individual line
      * may span multiple line breaks, depending on syntax implications.
@@ -322,7 +323,7 @@ public class IMAPResponseStream {
         try {
             // see if we have a literal length signature at the end.
             int length = out.getLiteralLength();
-            
+
             // -1 means no literal length, so we're done reading this particular response.
             if (length == -1) {
                 return;
@@ -341,11 +342,11 @@ public class IMAPResponseStream {
                 // The InputStream can return less than the requested length if it needs to block.
                 // This may take a couple iterations to get everything, particularly if it's long.
                 while (length > 0) {
-                    int read = -1; 
+                    int read = -1;
                     try {
                         read = in.read(bytes, offset, length);
                     } catch (IOException e) {
-                        throw new MessagingException("Unexpected read error on server connection", e); 
+                        throw new MessagingException("Unexpected read error on server connection", e);
                     }
                     // premature EOF we can't ignore.
                     if (read == -1) {
@@ -362,7 +363,7 @@ public class IMAPResponseStream {
             // additional literals).  Just recurse on the line reading logic.
             readBuffer();
         } catch (IOException e) {
-            e.printStackTrace(); 
+            e.printStackTrace();
             // this is a byte array output stream...should never happen
         }
     }

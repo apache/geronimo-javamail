@@ -19,6 +19,7 @@
 
 package org.apache.geronimo.javamail.authentication;
 
+import java.nio.charset.Charset;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -40,7 +41,7 @@ public class CramMD5Authenticator implements ClientAuthenticator {
 
     /**
      * Main constructor.
-     * 
+     *
      * @param username
      *            The login user name.
      * @param password
@@ -54,7 +55,7 @@ public class CramMD5Authenticator implements ClientAuthenticator {
     /**
      * Respond to the hasInitialResponse query. This mechanism does not have an
      * initial response.
-     * 
+     *
      * @return Always returns false.
      */
     public boolean hasInitialResponse() {
@@ -63,7 +64,7 @@ public class CramMD5Authenticator implements ClientAuthenticator {
 
     /**
      * Indicate whether the challenge/response process is complete.
-     * 
+     *
      * @return True if the last challenge has been processed, false otherwise.
      */
     public boolean isComplete() {
@@ -72,7 +73,7 @@ public class CramMD5Authenticator implements ClientAuthenticator {
 
     /**
      * Retrieve the authenticator mechanism name.
-     * 
+     *
      * @return Always returns the string "CRAM-MD5"
      */
     public String getMechanismName() {
@@ -82,10 +83,10 @@ public class CramMD5Authenticator implements ClientAuthenticator {
     /**
      * Evaluate a CRAM-MD5 login challenge, returning the a result string that
      * should satisfy the clallenge.
-     * 
+     *
      * @param challenge
      *            The decoded challenge data, as a byte array.
-     * 
+     *
      * @return A formatted challege response, as an array of bytes.
      * @exception MessagingException
      */
@@ -102,9 +103,9 @@ public class CramMD5Authenticator implements ClientAuthenticator {
 
             // create a unified string using the user name and the hex encoded
             // digest
-            String responseString = username + " " + new String(Hex.encode(digest));
+            String responseString = username + " " + new String(Hex.encode(digest), "ISO8859-1");
             complete = true;
-            return responseString.getBytes();
+            return responseString.getBytes("ISO8859-1");
         } catch (UnsupportedEncodingException e) {
             // got an error, fail this
             throw new MessagingException("Invalid character encodings");
@@ -115,12 +116,12 @@ public class CramMD5Authenticator implements ClientAuthenticator {
     /**
      * Compute a CRAM digest using the hmac_md5 algorithm. See the description
      * of RFC 2104 for algorithm details.
-     * 
+     *
      * @param key
      *            The key (K) for the calculation.
      * @param input
      *            The encrypted text value.
-     * 
+     *
      * @return The computed digest, as a byte array value.
      * @exception NoSuchAlgorithmException
      */

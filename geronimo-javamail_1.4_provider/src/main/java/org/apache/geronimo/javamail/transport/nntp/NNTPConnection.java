@@ -20,18 +20,20 @@
 package org.apache.geronimo.javamail.transport.nntp;
 
 import java.io.BufferedReader;
-import java.io.BufferedOutputStream; 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList; 
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -40,17 +42,17 @@ import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 
-import org.apache.geronimo.javamail.authentication.ClientAuthenticator; 
-import org.apache.geronimo.javamail.authentication.AuthenticatorFactory; 
-import org.apache.geronimo.javamail.util.MailConnection; 
+import org.apache.geronimo.javamail.authentication.ClientAuthenticator;
+import org.apache.geronimo.javamail.authentication.AuthenticatorFactory;
+import org.apache.geronimo.javamail.util.MailConnection;
 import org.apache.geronimo.javamail.util.MIMEOutputStream;
-import org.apache.geronimo.javamail.util.ProtocolProperties; 
+import org.apache.geronimo.javamail.util.ProtocolProperties;
 import org.apache.geronimo.mail.util.Base64;
 import org.apache.geronimo.mail.util.SessionUtil;
 
 /**
  * Simple implementation of NNTP transport. Just does plain RFC977-ish delivery.
- * 
+ *
  * @version $Rev$ $Date$
  */
 public class NNTPConnection extends MailConnection {
@@ -68,53 +70,53 @@ public class NNTPConnection extends MailConnection {
     protected static final int DEFAULT_NNTP_PORT = 119;
     // does the server support posting?
     protected boolean postingAllowed = true;
-    
-    // different authentication mechanisms 
-    protected boolean authInfoUserAllowed = false; 
-    protected boolean authInfoSaslAllowed = false; 
-    
+
+    // different authentication mechanisms
+    protected boolean authInfoUserAllowed = false;
+    protected boolean authInfoSaslAllowed = false;
+
     // the last response line received from the server.
     protected NNTPReply lastServerResponse = null;
 
     // the welcome string from the server.
     protected String welcomeString = null;
-    
-    // input reader wrapped around the socket input stream 
-    protected BufferedReader reader; 
-    // output writer wrapped around the socket output stream. 
-    protected PrintWriter writer; 
+
+    // input reader wrapped around the socket input stream
+    protected BufferedReader reader;
+    // output writer wrapped around the socket output stream.
+    protected PrintWriter writer;
 
     /**
      * Normal constructor for an NNTPConnection() object.
-     * 
+     *
      * @param props  The property bundle for this protocol instance.
      */
     public NNTPConnection(ProtocolProperties props) {
         super(props);
     }
-    
-    
+
+
     /**
      * Connect to the server and do the initial handshaking.
-     * 
+     *
      * @param host     The target host name.
      * @param port     The target port
      * @param username The connection username (can be null)
      * @param password The authentication password (can be null).
-     * 
-     * @return true if we were able to obtain a connection and 
+     *
+     * @return true if we were able to obtain a connection and
      *         authenticate.
      * @exception MessagingException
      */
     public boolean protocolConnect(String host, int port, String username, String password) throws MessagingException {
-        super.protocolConnect(host, port, username, password); 
+        super.protocolConnect(host, port, username, password);
         // create socket and connect to server.
         getConnection();
 
         // receive welcoming message
         getWelcome();
-        
-        return true; 
+
+        return true;
     }
 
 
@@ -127,24 +129,26 @@ public class NNTPConnection extends MailConnection {
     protected void getConnection() throws MessagingException
     {
         try {
-            // do all of the non-protocol specific set up.  This will get our socket established 
-            // and ready use. 
-            super.getConnection(); 
+            // do all of the non-protocol specific set up.  This will get our socket established
+            // and ready use.
+            super.getConnection();
         } catch (IOException e) {
-            throw new MessagingException("Unable to obtain a connection to the NNTP server", e); 
+            throw new MessagingException("Unable to obtain a connection to the NNTP server", e);
         }
-        
-        // The NNTP protocol is inherently a string-based protocol, so we get 
-        // string readers/writers for the connection streams 
-        reader = new BufferedReader(new InputStreamReader(inputStream));
+
+        // The NNTP protocol is inherently a string-based protocol, so we get
+        // string readers/writers for the connection streams.  Note that we explicitly
+        // set the encoding to ensure that an inappropriate native encoding is not picked up.
+        Charset iso88591 = Charset.forName("ISO8859-1");
+        reader = new BufferedReader(new InputStreamReader(inputStream, iso88591));
         writer = new PrintWriter(new BufferedOutputStream(outputStream));
     }
-    
+
 
     /**
      * Close the connection. On completion, we'll be disconnected from the
      * server and unable to send more data.
-     * 
+     *
      * @exception MessagingException
      */
     public void close() throws MessagingException {
@@ -160,16 +164,16 @@ public class NNTPConnection extends MailConnection {
             // make sure the connection
             // is shut down even if quit gets an error.
             closeServerConnection();
-            // get rid of our response processor too. 
-            reader = null; 
-            writer = null; 
+            // get rid of our response processor too.
+            reader = null;
+            writer = null;
         }
     }
 
     public String toString() {
         return "NNTPConnection host: " + serverHost + " port: " + serverPort;
     }
-    
+
 
     /**
      * Get the servers welcome blob from the wire....
@@ -196,32 +200,32 @@ public class NNTPConnection extends MailConnection {
         getExtensions();
     }
 
-    
+
     /**
      * Sends the QUIT message and receieves the response
      */
     public void sendQuit() throws MessagingException {
         sendLine("QUIT");
     }
-    
+
 
     /**
      * Tell the server to switch to a named group.
-     * 
+     *
      * @param name
      *            The name of the target group.
-     * 
+     *
      * @return The server response to the GROUP command.
      */
     public NNTPReply selectGroup(String name) throws MessagingException {
         // send the GROUP command
         return sendCommand("GROUP " + name);
     }
-    
+
 
     /**
      * Ask the server what extensions it supports.
-     * 
+     *
      * @return True if the command was accepted ok, false for any errors.
      * @exception MessagingException
      */
@@ -237,7 +241,7 @@ public class NNTPConnection extends MailConnection {
 
         // get a fresh extension mapping table.
         capabilities = new HashMap();
-        authentications = new ArrayList(); 
+        authentications = new ArrayList();
 
         // get the extension data lines.
         List extensions = reply.getData();
@@ -249,10 +253,10 @@ public class NNTPConnection extends MailConnection {
         }
     }
 
-    
+
     /**
      * Process an extension string passed back as the LIST EXTENSIONS response.
-     * 
+     *
      * @param extension
      *            The string value of the extension (which will be of the form
      *            "NAME arguments").
@@ -272,18 +276,18 @@ public class NNTPConnection extends MailConnection {
         // add this to the map so it can be tested later.
         capabilities.put(extensionName, argument);
 
-        // we need to determine which authentication mechanisms are supported here 
+        // we need to determine which authentication mechanisms are supported here
         if (extensionName.equals("AUTHINFO")) {
-            StringTokenizer tokenizer = new StringTokenizer(argument); 
-            
+            StringTokenizer tokenizer = new StringTokenizer(argument);
+
             while (tokenizer.hasMoreTokens()) {
-                // we only know how to do USER or SASL 
+                // we only know how to do USER or SASL
                 String mechanism = tokenizer.nextToken().toUpperCase();
                 if (mechanism.equals("SASL")) {
-                    authInfoSaslAllowed = true; 
+                    authInfoSaslAllowed = true;
                 }
                 else if (mechanism.equals("USER")) {
-                    authInfoUserAllowed = true; 
+                    authInfoUserAllowed = true;
                 }
             }
         }
@@ -298,15 +302,15 @@ public class NNTPConnection extends MailConnection {
             }
         }
     }
-    
+
 
     /**
      * Retrieve any argument information associated with a extension reported
      * back by the server on the EHLO command.
-     * 
+     *
      * @param name
      *            The name of the target server extension.
-     * 
+     *
      * @return Any argument passed on a server extension. Returns null if the
      *         extension did not include an argument or the extension was not
      *         supported.
@@ -320,10 +324,10 @@ public class NNTPConnection extends MailConnection {
 
     /**
      * Tests whether the target server supports a named extension.
-     * 
+     *
      * @param name
      *            The target extension name.
-     * 
+     *
      * @return true if the target server reported on the EHLO command that is
      *         supports the targer server, false if the extension was not
      *         supported.
@@ -333,7 +337,7 @@ public class NNTPConnection extends MailConnection {
         return extensionParameter(name) != null;
     }
 
-    
+
     /**
      * Sends the data in the message down the socket. This presumes the server
      * is in the right place and ready for getting the DATA message and the data
@@ -370,9 +374,9 @@ public class NNTPConnection extends MailConnection {
             msg.writeTo(mimeOut);
 
             // now to finish, we send a CRLF sequence, followed by a ".".
-            mimeOut.writeSMTPTerminator();           
-            // and flush the data to send it along 
-            mimeOut.flush();   
+            mimeOut.writeSMTPTerminator();
+            // and flush the data to send it along
+            mimeOut.flush();
         } catch (IOException e) {
             throw new MessagingException("I/O error posting message", e);
         } catch (MessagingException e) {
@@ -392,13 +396,13 @@ public class NNTPConnection extends MailConnection {
      * Issue a command and retrieve the response. If the given success indicator
      * is received, the command is returning a longer response, terminated by a
      * "crlf.crlf" sequence. These lines are attached to the reply.
-     * 
+     *
      * @param command
      *            The command to issue.
      * @param success
      *            The command reply that indicates additional data should be
      *            retrieved.
-     * 
+     *
      * @return The command reply.
      */
     public synchronized NNTPReply sendCommand(String command, int success) throws MessagingException {
@@ -412,10 +416,10 @@ public class NNTPConnection extends MailConnection {
     /**
      * Send a command to the server, returning the first response line back as a
      * reply.
-     * 
+     *
      * @param data
      *            The data to send.
-     * 
+     *
      * @return A reply object with the reply line.
      * @exception MessagingException
      */
@@ -441,10 +445,10 @@ public class NNTPConnection extends MailConnection {
     /**
      * Send a command to the server, returning the first response line back as a
      * reply.
-     * 
+     *
      * @param data
      *            The data to send.
-     * 
+     *
      * @return A reply object with the reply line.
      * @exception MessagingException
      */
@@ -461,7 +465,7 @@ public class NNTPConnection extends MailConnection {
             throw new MessagingException("no connection");
         }
         try {
-            outputStream.write(data.getBytes());
+            outputStream.write(data.getBytes("ISO8859-1"));
             outputStream.write(CR);
             outputStream.write(LF);
             outputStream.flush();
@@ -472,7 +476,7 @@ public class NNTPConnection extends MailConnection {
 
     /**
      * Get a reply line for an NNTP command.
-     * 
+     *
      * @return An NNTP reply object from the stream.
      */
     public NNTPReply getReply() throws MessagingException {
@@ -482,7 +486,7 @@ public class NNTPConnection extends MailConnection {
 
     /**
      * Retrieve the last response received from the NNTP server.
-     * 
+     *
      * @return The raw response string (including the error code) returned from
      *         the NNTP server.
      */
@@ -496,7 +500,7 @@ public class NNTPConnection extends MailConnection {
     /**
      * Receives one line from the server. A line is a sequence of bytes
      * terminated by a CRLF
-     * 
+     *
      * @return the line from the server as String
      */
     public String receiveLine() throws MessagingException {
@@ -515,7 +519,7 @@ public class NNTPConnection extends MailConnection {
         }
     }
 
-    
+
     /**
      * Authenticate with the server, if necessary (or possible).
      */
@@ -539,7 +543,7 @@ public class NNTPConnection extends MailConnection {
     /**
      * Process an AUTHINFO SIMPLE command. Not widely used, but if the server
      * asks for it, we can respond.
-     * 
+     *
      * @exception MessagingException
      */
     protected void processAuthinfoSimple() throws MessagingException {
@@ -553,46 +557,46 @@ public class NNTPConnection extends MailConnection {
         }
     }
 
-    
+
     /**
      * Process SASL-type authentication.
-     * 
+     *
      * @return Returns true if the server support a SASL authentication mechanism and
      *         accepted reponse challenges.
      * @exception MessagingException
      */
     protected boolean processSaslAuthentication() throws MessagingException {
-        // only do this if permitted 
+        // only do this if permitted
         if (!authInfoSaslAllowed) {
-            return false; 
+            return false;
         }
-        // if unable to get an appropriate authenticator, just fail it. 
-        ClientAuthenticator authenticator = getSaslAuthenticator(); 
+        // if unable to get an appropriate authenticator, just fail it.
+        ClientAuthenticator authenticator = getSaslAuthenticator();
         if (authenticator == null) {
-            throw new MessagingException("Unable to obtain SASL authenticator"); 
+            throw new MessagingException("Unable to obtain SASL authenticator");
         }
-        
+
         // go process the login.
         return processLogin(authenticator);
     }
-    
+
     /**
-     * Attempt to retrieve a SASL authenticator for this 
-     * protocol. 
-     * 
-     * @return A SASL authenticator, or null if a suitable one 
+     * Attempt to retrieve a SASL authenticator for this
+     * protocol.
+     *
+     * @return A SASL authenticator, or null if a suitable one
      *         was not located.
      */
     protected ClientAuthenticator getSaslAuthenticator() {
-        return AuthenticatorFactory.getAuthenticator(props, selectSaslMechanisms(), serverHost, username, password, authid, realm); 
+        return AuthenticatorFactory.getAuthenticator(props, selectSaslMechanisms(), serverHost, username, password, authid, realm);
     }
 
 
     /**
      * Process a login using the provided authenticator object.
-     * 
-     * NB:  This method is synchronized because we have a multi-step process going on 
-     * here.  No other commands should be sent to the server until we complete. 
+     *
+     * NB:  This method is synchronized because we have a multi-step process going on
+     * here.  No other commands should be sent to the server until we complete.
      *
      * @return Returns true if the server support a SASL authentication mechanism and
      * accepted reponse challenges.
@@ -611,7 +615,10 @@ public class NNTPConnection extends MailConnection {
             command.append(authenticator.getMechanismName());
             command.append(" ");
             // and append the response data
-            command.append(new String(Base64.encode(authenticator.evaluateChallenge(null))));
+            try {
+                command.append(new String(Base64.encode(authenticator.evaluateChallenge(null)), "US-ASCII"));
+            } catch (UnsupportedEncodingException e) {
+            }
             // send the command now
             sendLine(command.toString());
         }
@@ -650,11 +657,14 @@ public class NNTPConnection extends MailConnection {
                 }
 
                 // we're passed back a challenge value, Base64 encoded.
-                byte[] challenge = Base64.decode(line.getMessage().getBytes());
+                try {
+                    byte[] challenge = Base64.decode(line.getMessage().getBytes("ISO8859-1"));
 
-                // have the authenticator evaluate and send back the encoded
-                // response.
-                sendLine(new String(Base64.encode(authenticator.evaluateChallenge(challenge))));
+                    // have the authenticator evaluate and send back the encoded
+                    // response.
+                    sendLine(new String(Base64.encode(authenticator.evaluateChallenge(challenge)), "US-ASCII"));
+                } catch (UnsupportedEncodingException e) {
+                }
             }
             // completion or challenge are the only responses we know how to
             // handle. Anything else must
@@ -666,17 +676,17 @@ public class NNTPConnection extends MailConnection {
         }
     }
 
-    
+
     /**
      * Process an AUTHINFO USER command. Most common form of NNTP
      * authentication.
-     * 
+     *
      * @exception MessagingException
      */
     protected void processAuthinfoUser() throws MessagingException {
-        // only do this if allowed by the server 
+        // only do this if allowed by the server
         if (!authInfoUserAllowed) {
-            return; 
+            return;
         }
         NNTPReply reply = sendAuthCommand("AUTHINFO USER " + username);
         // accepted without a password (uncommon, but allowed), we're done
@@ -694,10 +704,10 @@ public class NNTPConnection extends MailConnection {
         }
     }
 
-    
+
     /**
      * Indicate whether posting is allowed for a given server.
-     * 
+     *
      * @return True if the server allows posting, false if the server is
      *         read-only.
      */
@@ -707,7 +717,7 @@ public class NNTPConnection extends MailConnection {
 
     /**
      * Retrieve the welcome string sent back from the server.
-     * 
+     *
      * @return The server provided welcome string.
      */
     public String getWelcomeString() {

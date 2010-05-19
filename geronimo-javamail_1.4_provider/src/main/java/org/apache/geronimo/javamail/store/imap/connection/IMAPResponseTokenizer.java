@@ -19,6 +19,7 @@ package org.apache.geronimo.javamail.store.imap.connection;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -186,7 +187,7 @@ public class IMAPResponseTokenizer {
             return "";
         }
 
-        return new String(response, pos, response.length - pos);
+        return new String(response, pos, response.length - pos, Charset.forName("ISO8859-1"));
     }
 
 
@@ -236,7 +237,7 @@ public class IMAPResponseTokenizer {
         }
 
         // Numeric tokens we store as a different type.
-        String value = new String(response, start, pos - start);
+        String value = new String(response, start, pos - start, Charset.forName("ISO8859-1"));
         try {
             int intValue = Integer.parseInt(value);
             return new Token(Token.NUMERIC, value);
@@ -376,7 +377,7 @@ public class IMAPResponseTokenizer {
      */
     private Token readQuotedString() throws MessagingException {
 
-        String value = new String(readQuotedStringData());
+        String value = new String(readQuotedStringData(), Charset.forName("ISO8859-1"));
         return new Token(Token.QUOTEDSTRING, value);
     }
 
@@ -428,7 +429,7 @@ public class IMAPResponseTokenizer {
      * @exception ResponseFormatException
      */
     protected Token readLiteral() throws MessagingException {
-        String value = new String(readLiteralData());
+        String value = new String(readLiteralData(), Charset.forName("ISO8859-1"));
         return new Token(Token.LITERAL, value);
     }
 
@@ -480,7 +481,7 @@ public class IMAPResponseTokenizer {
      * @return A String extracted from the buffer.
      */
     protected String substring(int start, int end ) {
-        return new String(response, start, end - start);
+        return new String(response, start, end - start, Charset.forName("ISO8859-1"));
     }
 
 
