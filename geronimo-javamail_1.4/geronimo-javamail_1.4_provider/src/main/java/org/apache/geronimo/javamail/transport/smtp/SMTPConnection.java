@@ -19,21 +19,16 @@
 
 package org.apache.geronimo.javamail.transport.smtp;
 
-import java.io.BufferedReader;
-import java.io.BufferedOutputStream; 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketException; 
-import java.util.ArrayList; 
+import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -43,23 +38,23 @@ import javax.mail.AuthenticationFailedException;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage; 
-import javax.mail.internet.MimeMultipart; 
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimePart;
 import javax.mail.Session;
 
-import org.apache.geronimo.javamail.authentication.ClientAuthenticator; 
-import org.apache.geronimo.javamail.authentication.AuthenticatorFactory; 
+import org.apache.geronimo.javamail.authentication.ClientAuthenticator;
+import org.apache.geronimo.javamail.authentication.AuthenticatorFactory;
 import org.apache.geronimo.javamail.util.CountingOutputStream;
-import org.apache.geronimo.javamail.util.MailConnection; 
+import org.apache.geronimo.javamail.util.MailConnection;
 import org.apache.geronimo.javamail.util.MIMEOutputStream;
-import org.apache.geronimo.javamail.util.ProtocolProperties; 
+import org.apache.geronimo.javamail.util.ProtocolProperties;
 import org.apache.geronimo.mail.util.Base64;
 import org.apache.geronimo.mail.util.XText;
 
 /**
  * Simple implementation of SMTP transport. Just does plain RFC977-ish delivery.
- * 
+ *
  * @version $Rev$ $Date$
  */
 public class SMTPConnection extends MailConnection {
@@ -78,15 +73,10 @@ public class SMTPConnection extends MailConnection {
      * property keys for protocol properties.
      */
     protected static final int DEFAULT_NNTP_PORT = 119;
-    
+
     // the last response line received from the server.
     protected SMTPReply lastServerResponse = null;
-    
-    // input reader wrapped around the socket input stream 
-    protected BufferedReader reader; 
-    // output writer wrapped around the socket output stream. 
-    protected PrintWriter writer; 
-    
+
     // do we report success after completion of each mail send.
     protected boolean reportSuccess;
     // does the server support transport level security?
@@ -94,34 +84,34 @@ public class SMTPConnection extends MailConnection {
     // is TLS enabled on our part?
     protected boolean useTLS = false;
     // should we use 8BITMIME encoding if supported by the server?
-    protected boolean use8bit = false; 
+    protected boolean use8bit = false;
 
     /**
      * Normal constructor for an SMTPConnection() object.
-     * 
+     *
      * @param props  The property bundle for this protocol instance.
      */
     public SMTPConnection(ProtocolProperties props) {
         super(props);
-        
+
         // check to see if we need to throw an exception after a send operation.
         reportSuccess = props.getBooleanProperty(MAIL_SMTP_REPORT_SUCCESS, false);
         // and also check for TLS enablement.
         useTLS = props.getBooleanProperty(MAIL_SMTP_STARTTLS_ENABLE, false);
-        // and also check for 8bitmime support  
+        // and also check for 8bitmime support
         use8bit = props.getBooleanProperty(MAIL_SMTP_ALLOW8BITMIME, false);
     }
-    
-    
+
+
     /**
      * Connect to the server and do the initial handshaking.
-     * 
+     *
      * @param host     The target host name.
      * @param port     The target port
      * @param username The connection username (can be null)
      * @param password The authentication password (can be null).
-     * 
-     * @return true if we were able to obtain a connection and 
+     *
+     * @return true if we were able to obtain a connection and
      *         authenticate.
      * @exception MessagingException
      */
@@ -142,22 +132,22 @@ public class SMTPConnection extends MailConnection {
             debugOut("Failing connection for missing authentication information");
             return false;
         }
-        
-        super.protocolConnect(host, port, username, password); 
-        
+
+        super.protocolConnect(host, port, username, password);
+
         try {
             // create socket and connect to server.
             getConnection();
 
             // receive welcoming message
             if (!getWelcome()) {
-                debugOut("Error getting welcome message"); 
+                debugOut("Error getting welcome message");
                 throw new MessagingException("Error in getting welcome msg");
             }
 
             // say hello
             if (!sendHandshake()) {
-                debugOut("Error getting processing handshake message"); 
+                debugOut("Error getting processing handshake message");
                 throw new MessagingException("Error in saying EHLO to server");
             }
 
@@ -170,15 +160,15 @@ public class SMTPConnection extends MailConnection {
             debugOut("I/O exception establishing connection", e);
             throw new MessagingException("Connection error", e);
         }
-        debugOut("Successful connection"); 
+        debugOut("Successful connection");
         return true;
     }
-    
+
 
     /**
      * Close the connection. On completion, we'll be disconnected from the
      * server and unable to send more data.
-     * 
+     *
      * @exception MessagingException
      */
     public void close() throws MessagingException {
@@ -201,14 +191,14 @@ public class SMTPConnection extends MailConnection {
         return "SMTPConnection host: " + serverHost + " port: " + serverPort;
     }
 
-    
+
     /**
      * Set the sender for this mail.
-     * 
+     *
      * @param message
      *                   The message we're sending.
-     * 
-     * @return True if the command was accepted, false otherwise. 
+     *
+     * @return True if the command was accepted, false otherwise.
      * @exception MessagingException
      */
     protected boolean sendMailFrom(Message message) throws MessagingException {
@@ -242,7 +232,7 @@ public class SMTPConnection extends MailConnection {
             else {
                 InternetAddress local = InternetAddress.getLocalAddress(session);
                 if (local != null) {
-                    from = local.getAddress(); 
+                    from = local.getAddress();
                 }
             }
         }
@@ -256,32 +246,32 @@ public class SMTPConnection extends MailConnection {
         // start building up the command
         command.append("MAIL FROM: ");
         command.append(fixEmailAddress(from));
-        
-        // If the server supports the 8BITMIME extension, we might need to change the 
-        // transfer encoding for the content to allow for direct transmission of the 
-        // 8-bit codes. 
+
+        // If the server supports the 8BITMIME extension, we might need to change the
+        // transfer encoding for the content to allow for direct transmission of the
+        // 8-bit codes.
         if (supportsExtension("8BITMIME")) {
-            // we only do this if the capability was enabled via a property option or 
-            // by explicitly setting the property on the message object. 
+            // we only do this if the capability was enabled via a property option or
+            // by explicitly setting the property on the message object.
             if (use8bit || (message instanceof SMTPMessage && ((SMTPMessage)message).getAllow8bitMIME())) {
-                // make sure we add the BODY= option to the FROM message. 
-                command.append(" BODY=8BITMIME"); 
-                
-                // go check the content and see if the can convert the transfer encoding to 
-                // allow direct 8-bit transmission. 
+                // make sure we add the BODY= option to the FROM message.
+                command.append(" BODY=8BITMIME");
+
+                // go check the content and see if the can convert the transfer encoding to
+                // allow direct 8-bit transmission.
                 if (convertTransferEncoding((MimeMessage)message)) {
-                    // if we changed the encoding on any of the parts, then we 
-                    // need to save the message again 
-                    message.saveChanges(); 
+                    // if we changed the encoding on any of the parts, then we
+                    // need to save the message again
+                    message.saveChanges();
                 }
             }
         }
-        
-        // some servers ask for a size estimate on the initial send 
+
+        // some servers ask for a size estimate on the initial send
         if (supportsExtension("SIZE")) {
-            int estimate = getSizeEstimate(message); 
+            int estimate = getSizeEstimate(message);
             if (estimate > 0) {
-                command.append(" SIZE=" + estimate); 
+                command.append(" SIZE=" + estimate);
             }
         }
 
@@ -342,7 +332,7 @@ public class SMTPConnection extends MailConnection {
                 command.append(" AUTH=");
                 try {
                     // add this encoded
-                    command.append(new String(XText.encode(submitter.getBytes("US-ASCII"))));
+                    command.append(new String(XText.encode(submitter.getBytes("US-ASCII")), "US-ASCII"));
                 } catch (UnsupportedEncodingException e) {
                     throw new MessagingException("Invalid submitter value " + submitter);
                 }
@@ -375,70 +365,70 @@ public class SMTPConnection extends MailConnection {
         // 250 response indicates success.
         return line.getCode() == SMTPReply.COMMAND_ACCEPTED;
     }
-    
-    
+
+
     /**
-     * Check to see if a MIME body part can have its 
+     * Check to see if a MIME body part can have its
      * encoding changed from quoted-printable or base64
-     * encoding to 8bit encoding.  In order for this 
-     * to work, it must follow the rules laid out in 
-     * RFC 2045.  To qualify for conversion, the text 
-     * must be: 
-     * 
-     * 1)  No more than 998 bytes long 
+     * encoding to 8bit encoding.  In order for this
+     * to work, it must follow the rules laid out in
+     * RFC 2045.  To qualify for conversion, the text
+     * must be:
+     *
+     * 1)  No more than 998 bytes long
      * 2)  All lines are terminated with CRLF sequences
-     * 3)  CR and LF characters only occur in properly 
-     * formed line separators 
-     * 4)  No null characters are allowed. 
-     * 
-     * The conversion will only be applied to text 
-     * elements, and this will recurse through the 
-     * different elements of MultiPart content. 
-     * 
+     * 3)  CR and LF characters only occur in properly
+     * formed line separators
+     * 4)  No null characters are allowed.
+     *
+     * The conversion will only be applied to text
+     * elements, and this will recurse through the
+     * different elements of MultiPart content.
+     *
      * @param bodyPart The bodyPart to convert. Initially, this will be
      *                 the message itself.
-     * 
-     * @return true if any conversion was performed, false if 
+     *
+     * @return true if any conversion was performed, false if
      *         nothing was converted.
      */
     protected boolean convertTransferEncoding(MimePart bodyPart)
     {
-        boolean converted = false; 
+        boolean converted = false;
         try {
-            // if this is a multipart element, apply the conversion rules 
-            // to each of the parts. 
+            // if this is a multipart element, apply the conversion rules
+            // to each of the parts.
             if (bodyPart.isMimeType("multipart/")) {
-                MimeMultipart parts = (MimeMultipart)bodyPart.getContent(); 
+                MimeMultipart parts = (MimeMultipart)bodyPart.getContent();
                 for (int i = 0; i < parts.getCount(); i++) {
-                    // convert each body part, and accumulate the conversion result 
-                    converted = converted && convertTransferEncoding((MimePart)parts.getBodyPart(i)); 
+                    // convert each body part, and accumulate the conversion result
+                    converted = converted && convertTransferEncoding((MimePart)parts.getBodyPart(i));
                 }
             }
             else {
                 // we only do this if the encoding is quoted-printable or base64
-                String encoding =  bodyPart.getEncoding(); 
+                String encoding =  bodyPart.getEncoding();
                 if (encoding != null) {
-                    encoding = encoding.toLowerCase(); 
+                    encoding = encoding.toLowerCase();
                     if (encoding.equals("quoted-printable") || encoding.equals("base64")) {
-                        // this requires encoding.  Read the actual content to see if 
-                        // it conforms to the 8bit encoding rules. 
+                        // this requires encoding.  Read the actual content to see if
+                        // it conforms to the 8bit encoding rules.
                         if (isValid8bit(bodyPart.getInputStream())) {
-                            // There's a huge hidden gotcha lurking under the covers here. 
-                            // If the content just exists as an encoded byte array, then just 
-                            // switching the transfer encoding will mess things up because the 
-                            // already encoded data gets transmitted in encoded form, but with 
-                            // and 8bit encoding style.  As a result, it doesn't get unencoded on 
-                            // the receiving end.  This is a nasty problem to debug.  
+                            // There's a huge hidden gotcha lurking under the covers here.
+                            // If the content just exists as an encoded byte array, then just
+                            // switching the transfer encoding will mess things up because the
+                            // already encoded data gets transmitted in encoded form, but with
+                            // and 8bit encoding style.  As a result, it doesn't get unencoded on
+                            // the receiving end.  This is a nasty problem to debug.
                             //
-                            // The solution is to get the content as it's object type, set it back 
-                            // on the the message in raw form.  Requesting the content will apply the 
-                            // current transfer encoding value to the data.  Once we have set the 
-                            // content value back, we can reset the transfer encoding. 
-                            bodyPart.setContent(bodyPart.getContent(), bodyPart.getContentType()); 
-                            
-                            // it's valid, so change the transfer encoding to just 
-                            // pass the data through.  
-                            bodyPart.setHeader("Content-Transfer-Encoding", "8bit"); 
+                            // The solution is to get the content as it's object type, set it back
+                            // on the the message in raw form.  Requesting the content will apply the
+                            // current transfer encoding value to the data.  Once we have set the
+                            // content value back, we can reset the transfer encoding.
+                            bodyPart.setContent(bodyPart.getContent(), bodyPart.getContentType());
+
+                            // it's valid, so change the transfer encoding to just
+                            // pass the data through.
+                            bodyPart.setHeader("Content-Transfer-Encoding", "8bit");
                             converted = true;   // we've changed something
                         }
                     }
@@ -447,36 +437,36 @@ public class SMTPConnection extends MailConnection {
         } catch (MessagingException e) {
         } catch (IOException e) {
         }
-        return converted; 
+        return converted;
     }
 
-    
+
     /**
      * Get the server's welcome blob from the wire....
      */
     protected boolean getWelcome() throws MessagingException {
         SMTPReply line = getReply();
-        // just return the error status...we don't care about any of the 
+        // just return the error status...we don't care about any of the
         // response information
         return !line.isError();
     }
-    
-    
+
+
     /**
-     * Get an estimate of the transmission size for this 
-     * message.  This size is the complete message as it is 
-     * encoded and transmitted on the DATA command, not counting 
-     * the terminating ".CRLF". 
-     * 
+     * Get an estimate of the transmission size for this
+     * message.  This size is the complete message as it is
+     * encoded and transmitted on the DATA command, not counting
+     * the terminating ".CRLF".
+     *
      * @param msg    The message we're sending.
-     * 
-     * @return The count of bytes, if it can be calculated. 
+     *
+     * @return The count of bytes, if it can be calculated.
      */
     protected int getSizeEstimate(Message msg) {
         // now the data... I could look at the type, but
         try {
-            CountingOutputStream outputStream = new CountingOutputStream(); 
-            
+            CountingOutputStream outputStream = new CountingOutputStream();
+
             // the data content has two requirements we need to meet by
             // filtering the
             // output stream. Requirement 1 is to conicalize any line breaks.
@@ -495,19 +485,19 @@ public class SMTPConnection extends MailConnection {
 
             msg.writeTo(mimeOut);
 
-            // now to finish, we make sure there's a line break at the end.  
-            mimeOut.forceTerminatingLineBreak();   
-            // and flush the data to send it along 
-            mimeOut.flush();   
-            
-            return outputStream.getCount();   
+            // now to finish, we make sure there's a line break at the end.
+            mimeOut.forceTerminatingLineBreak();
+            // and flush the data to send it along
+            mimeOut.flush();
+
+            return outputStream.getCount();
         } catch (IOException e) {
-            return 0;     // can't get an estimate 
+            return 0;     // can't get an estimate
         } catch (MessagingException e) {
-            return 0;     // can't get an estimate 
+            return 0;     // can't get an estimate
         }
     }
-    
+
 
     /**
      * Sends the data in the message down the socket. This presumes the server
@@ -544,9 +534,9 @@ public class SMTPConnection extends MailConnection {
             msg.writeTo(mimeOut);
 
             // now to finish, we send a CRLF sequence, followed by a ".".
-            mimeOut.writeSMTPTerminator();           
-            // and flush the data to send it along 
-            mimeOut.flush();   
+            mimeOut.writeSMTPTerminator();
+            // and flush the data to send it along
+            mimeOut.flush();
         } catch (IOException e) {
             throw new MessagingException(e.toString());
         } catch (MessagingException e) {
@@ -573,14 +563,14 @@ public class SMTPConnection extends MailConnection {
      */
     protected void sendQuit() throws MessagingException {
         // there's yet another property that controls whether we should wait for
-        // a reply for a QUIT command. If true, we're suppposed to wait for a response 
-        // from the QUIT command.  Otherwise we just send the QUIT and bail.  The default 
+        // a reply for a QUIT command. If true, we're suppposed to wait for a response
+        // from the QUIT command.  Otherwise we just send the QUIT and bail.  The default
         // is "false"
         if (props.getBooleanProperty(MAIL_SMTP_QUITWAIT, true)) {
             // handle as a real command...we're going to ignore the response.
             sendCommand("QUIT");
         } else {
-            // just send the command without waiting for a response. 
+            // just send the command without waiting for a response.
             sendLine("QUIT");
         }
     }
@@ -673,7 +663,7 @@ public class SMTPConnection extends MailConnection {
             throw new MessagingException("no connection");
         }
         try {
-            outputStream.write(data.getBytes());
+            outputStream.write(data.getBytes("ISO8859-1"));
             outputStream.write(CR);
             outputStream.write(LF);
             outputStream.flush();
@@ -700,10 +690,10 @@ public class SMTPConnection extends MailConnection {
     protected SMTPReply getReply() throws MessagingException {
         try {
             lastServerResponse = new SMTPReply(receiveLine());
-            // if the first line we receive is a continuation, continue 
-            // reading lines until we reach the non-continued one. 
+            // if the first line we receive is a continuation, continue
+            // reading lines until we reach the non-continued one.
             while (lastServerResponse.isContinued()) {
-                lastServerResponse.addLine(receiveLine()); 
+                lastServerResponse.addLine(receiveLine());
             }
         } catch (MalformedSMTPReplyException e) {
             throw new MessagingException(e.toString());
@@ -720,9 +710,9 @@ public class SMTPConnection extends MailConnection {
      *         the SMTP server.
      */
     public SMTPReply getLastServerResponse() {
-        return lastServerResponse; 
+        return lastServerResponse;
     }
-    
+
 
     /**
      * Receives one line from the server. A line is a sequence of bytes
@@ -852,14 +842,14 @@ public class SMTPConnection extends MailConnection {
             debugOut("STARTTLS command rejected by SMTP server " + serverHost);
             throw new MessagingException("Unable to make TLS server connection");
         }
-        
-        debugOut("STARTTLS command accepted"); 
-        
-        // the base class handles the socket switch details 
-        super.getConnectedTLSSocket(); 
+
+        debugOut("STARTTLS command accepted");
+
+        // the base class handles the socket switch details
+        super.getConnectedTLSSocket();
     }
 
-    
+
     /**
      * Send the EHLO command to the SMTP server.
      *
@@ -881,11 +871,11 @@ public class SMTPConnection extends MailConnection {
             return false;
         }
 
-        // create a fresh mapping and authentications table 
+        // create a fresh mapping and authentications table
         capabilities = new HashMap();
-        authentications = new ArrayList(); 
+        authentications = new ArrayList();
 
-        List lines = reply.getLines(); 
+        List lines = reply.getLines();
         // process all of the continuation lines
         for (int i = 1; i < lines.size(); i++) {
             // go process the extention
@@ -900,11 +890,11 @@ public class SMTPConnection extends MailConnection {
      * @exception MessagingException
      */
     protected void sendHelo() throws MessagingException {
-        // create a fresh mapping and authentications table 
-        // these will be empty, but it will prevent NPEs 
+        // create a fresh mapping and authentications table
+        // these will be empty, but it will prevent NPEs
         capabilities = new HashMap();
-        authentications = new ArrayList(); 
-        
+        authentications = new ArrayList();
+
         sendLine("HELO " + getLocalHost());
 
         SMTPReply line = getReply();
@@ -927,7 +917,7 @@ public class SMTPConnection extends MailConnection {
         return useTLS;
     }
 
-    
+
     /**
      * Set a new value for the startTLS property.
      *
@@ -938,7 +928,7 @@ public class SMTPConnection extends MailConnection {
         useTLS = start;
     }
 
-    
+
     /**
      * Process an extension string passed back as the EHLP response.
      *
@@ -947,7 +937,7 @@ public class SMTPConnection extends MailConnection {
      *            "NAME arguments").
      */
     protected void processExtension(String extension) {
-        debugOut("Processing extension " + extension); 
+        debugOut("Processing extension " + extension);
         String extensionName = extension.toUpperCase();
         String argument = "";
 
@@ -958,7 +948,7 @@ public class SMTPConnection extends MailConnection {
             extensionName = extension.substring(0, delimiter).toUpperCase();
             argument = extension.substring(delimiter + 1);
         }
-        
+
         // add this to the map so it can be tested later.
         capabilities.put(extensionName, argument);
 
@@ -989,7 +979,7 @@ public class SMTPConnection extends MailConnection {
         }
     }
 
-    
+
     /**
      * Retrieve any argument information associated with a extension reported
      * back by the server on the EHLO command.
@@ -1007,7 +997,7 @@ public class SMTPConnection extends MailConnection {
         }
         return null;
     }
-    
+
 
     /**
      * Tests whether the target server supports a named extension.
@@ -1023,7 +1013,7 @@ public class SMTPConnection extends MailConnection {
         // this only returns null if we don't have this extension
         return extensionParameter(name) != null;
     }
-    
+
 
     /**
      * Authenticate with the server, if necessary (or possible).
@@ -1043,14 +1033,14 @@ public class SMTPConnection extends MailConnection {
         if (username == null || password == null) {
             return false;
         }
-        
-        // if unable to get an appropriate authenticator, just fail it. 
-        ClientAuthenticator authenticator = getSaslAuthenticator(); 
+
+        // if unable to get an appropriate authenticator, just fail it.
+        ClientAuthenticator authenticator = getSaslAuthenticator();
         if (authenticator == null) {
-            throw new MessagingException("Unable to obtain SASL authenticator"); 
+            throw new MessagingException("Unable to obtain SASL authenticator");
         }
-        
-        
+
+
         if (debug) {
             debugOut("Authenticating for user: " + username + " using " + authenticator.getMechanismName());
         }
@@ -1065,7 +1055,10 @@ public class SMTPConnection extends MailConnection {
             command.append(authenticator.getMechanismName());
             command.append(" ");
             // and append the response data
-            command.append(new String(Base64.encode(authenticator.evaluateChallenge(null))));
+            try {
+                command.append(new String(Base64.encode(authenticator.evaluateChallenge(null)), "US-ASCII"));
+            } catch (UnsupportedEncodingException e) {
+            }
             // send the command now
             sendLine(command.toString());
         }
@@ -1109,12 +1102,15 @@ public class SMTPConnection extends MailConnection {
                     return false;
                 }
 
-                // we're passed back a challenge value, Base64 encoded.
-                byte[] challenge = Base64.decode(line.getMessage().getBytes());
+                try {
+                    // we're passed back a challenge value, Base64 encoded.
+                    byte[] challenge = Base64.decode(line.getMessage().getBytes("ISO8859-1"));
 
-                // have the authenticator evaluate and send back the encoded
-                // response.
-                sendLine(new String(Base64.encode(authenticator.evaluateChallenge(challenge))));
+                    // have the authenticator evaluate and send back the encoded
+                    // response.
+                    sendLine(new String(Base64.encode(authenticator.evaluateChallenge(challenge)), "US-ASCII"));
+                } catch (UnsupportedEncodingException e) {
+                }
             }
             // completion or challenge are the only responses we know how to
             // handle. Anything else must
@@ -1127,74 +1123,74 @@ public class SMTPConnection extends MailConnection {
             }
         }
     }
-    
-    
+
+
     /**
-     * Attempt to retrieve a SASL authenticator for this 
-     * protocol. 
-     * 
-     * @return A SASL authenticator, or null if a suitable one 
+     * Attempt to retrieve a SASL authenticator for this
+     * protocol.
+     *
+     * @return A SASL authenticator, or null if a suitable one
      *         was not located.
      */
     protected ClientAuthenticator getSaslAuthenticator() {
-        return AuthenticatorFactory.getAuthenticator(props, selectSaslMechanisms(), serverHost, username, password, authid, realm); 
+        return AuthenticatorFactory.getAuthenticator(props, selectSaslMechanisms(), serverHost, username, password, authid, realm);
     }
 
-    
+
     /**
-     * Read the bytes in a stream a test to see if this 
-     * conforms to the RFC 2045 rules for 8bit encoding. 
-     * 
-     * 1)  No more than 998 bytes long 
+     * Read the bytes in a stream a test to see if this
+     * conforms to the RFC 2045 rules for 8bit encoding.
+     *
+     * 1)  No more than 998 bytes long
      * 2)  All lines are terminated with CRLF sequences
-     * 3)  CR and LF characters only occur in properly 
-     * formed line separators 
-     * 4)  No null characters are allowed. 
-     * 
+     * 3)  CR and LF characters only occur in properly
+     * formed line separators
+     * 4)  No null characters are allowed.
+     *
      * @param inStream The source input stream.
-     * 
-     * @return true if this can be transmitted successfully 
+     *
+     * @return true if this can be transmitted successfully
      *         using 8bit encoding, false if an alternate encoding
      *         will be required.
      */
-    protected boolean isValid8bit(InputStream inStream) { 
+    protected boolean isValid8bit(InputStream inStream) {
         try {
-            int ch;  
-            int lineLength = 0; 
+            int ch;
+            int lineLength = 0;
             while ((ch = inStream.read()) >= 0) {
-                // nulls are decidedly not allowed 
+                // nulls are decidedly not allowed
                 if (ch == 0) {
-                    return false; 
+                    return false;
                 }
-                // start of a CRLF sequence (potentially) 
+                // start of a CRLF sequence (potentially)
                 else if (ch == '\r') {
-                    // check the next character.  There must be one, 
-                    // and it must be a LF for this to be value 
-                    ch = inStream.read(); 
+                    // check the next character.  There must be one,
+                    // and it must be a LF for this to be value
+                    ch = inStream.read();
                     if (ch != '\n') {
-                        return false; 
+                        return false;
                     }
-                    // reset the line length 
-                    lineLength = 0; 
+                    // reset the line length
+                    lineLength = 0;
                 }
                 else {
-                    // a normal character 
-                    lineLength++; 
-                    // make sure the line is not too long 
+                    // a normal character
+                    lineLength++;
+                    // make sure the line is not too long
                     if (lineLength > 998) {
-                        return false; 
+                        return false;
                     }
                 }
-                
+
             }
         } catch (IOException e) {
-            return false;  // can't read this, don't try passing it 
+            return false;  // can't read this, don't try passing it
         }
-        // this converted ok 
-        return true; 
+        // this converted ok
+        return true;
     }
 
-    
+
     /**
      * Simple holder class for the address/send status duple, as we can have
      * mixed success for a set of addresses and a message
@@ -1299,7 +1295,7 @@ public class SMTPConnection extends MailConnection {
         }
     }
 
-    
+
     /**
      * Reset the server connection after an error.
      *
@@ -1322,14 +1318,14 @@ public class SMTPConnection extends MailConnection {
         lastServerResponse = last;
     }
 
-    
+
     /**
      * Return the current reportSuccess property.
      *
      * @return The current reportSuccess property.
      */
     public boolean getReportSuccess() {
-        return reportSuccess; 
+        return reportSuccess;
     }
 
     /**
@@ -1339,7 +1335,7 @@ public class SMTPConnection extends MailConnection {
      *            The new setting.
      */
     public void setReportSuccess(boolean report) {
-        reportSuccess = report; 
+        reportSuccess = report;
     }
 }
 

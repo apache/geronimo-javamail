@@ -74,7 +74,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
     /**
      * Main constructor.
-     * 
+     *
      * @param host
      *            The server host name.
      * @param username
@@ -94,7 +94,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
     /**
      * Respond to the hasInitialResponse query. This mechanism does not have an
      * initial response.
-     * 
+     *
      * @return Always returns false.
      */
     public boolean hasInitialResponse() {
@@ -103,7 +103,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
     /**
      * Indicate whether the challenge/response process is complete.
-     * 
+     *
      * @return True if the last challenge has been processed, false otherwise.
      */
     public boolean isComplete() {
@@ -112,7 +112,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
     /**
      * Retrieve the authenticator mechanism name.
-     * 
+     *
      * @return Always returns the string "DIGEST-MD5"
      */
     public String getMechanismName() {
@@ -122,10 +122,10 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
     /**
      * Evaluate a DIGEST-MD5 login challenge, returning the a result string that
      * should satisfy the clallenge.
-     * 
+     *
      * @param challenge
      *            The decoded challenge data, as a string.
-     * 
+     *
      * @return A formatted challege response, as an array of bytes.
      * @exception MessagingException
      */
@@ -161,10 +161,10 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
     /**
      * Evaluate a DIGEST-MD5 login server authentication challenge, returning
      * the a result string that should satisfy the clallenge.
-     * 
+     *
      * @param challenge
      *            The decoded challenge data, as a string.
-     * 
+     *
      * @return A formatted challege response, as an array of bytes.
      * @exception MessagingException
      */
@@ -180,11 +180,11 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
             // first add in the URI information.
             digest.update((":smtp/" + host).getBytes("US-ASCII"));
             // now mix in the response we sent originally
-            String responseString = clientResponse + new String(Hex.encode(digest.digest()));
+            String responseString = clientResponse + new String(Hex.encode(digest.digest()), "US-ASCII");
             digest.update(responseString.getBytes("US-ASCII"));
 
             // now convert that into a hex encoded string.
-            String validationText = new String(Hex.encode(digest.digest()));
+            String validationText = new String(Hex.encode(digest.digest()), "US-ASCII");
 
             // if everything went well, this calculated value should match what
             // we got back from the server.
@@ -202,10 +202,10 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
     /**
      * Evaluate a DIGEST-MD5 login client authentication challenge, returning
      * the a result string that should satisfy the clallenge.
-     * 
+     *
      * @param challenge
      *            The decoded challenge data, as a string.
-     * 
+     *
      * @return A formatted challege response, as an array of bytes.
      * @exception MessagingException
      */
@@ -242,13 +242,13 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
         byte[] cnonceBytes = new byte[32];
 
         randomGenerator.nextBytes(cnonceBytes);
-        // and get this as a base64 encoded string.
-        String cnonce = new String(Base64.encode(cnonceBytes));
-
-        // Now the digest computation part. This gets a bit tricky, and must be
-        // done in strict order.
 
         try {
+            // and get this as a base64 encoded string.
+            String cnonce = new String(Base64.encode(cnonceBytes), "US-ASCII");
+
+            // Now the digest computation part. This gets a bit tricky, and must be
+            // done in strict order.
             // this identifies where we're logging into.
             String idString = username + ":" + realm + ":" + password;
             // we get a digest for this string, then use the digest for the
@@ -265,20 +265,20 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
             // (qop). We save this in an
             // instance variable because we'll need this to validate the
             // response back from the server.
-            clientResponse = new String(Hex.encode(digest.digest())) + ":" + nonce + ":00000001:" + cnonce + ":auth:";
+            clientResponse = new String(Hex.encode(digest.digest()), "US-ASCII") + ":" + nonce + ":00000001:" + cnonce + ":auth:";
 
             // now we add in identification values to the hash.
             String authString = "AUTHENTICATE:smtp/" + host;
             digest.update(authString.getBytes("US-ASCII"));
 
             // this gets added on to the client response
-            String responseString = clientResponse + new String(Hex.encode(digest.digest()));
+            String responseString = clientResponse + new String(Hex.encode(digest.digest()), "US_ASCII");
             // and this gets fed back into the digest
             digest.update(responseString.getBytes("US-ASCII"));
 
             // and FINALLY, the challege digest is hex encoded for sending back
             // to the server (whew).
-            String challengeResponse = new String(Hex.encode(digest.digest()));
+            String challengeResponse = new String(Hex.encode(digest.digest()), "US-ASCII");
 
             // now finally build the keyword/value part of the challenge
             // response. These can be
@@ -323,17 +323,21 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
     /**
      * Parse the challege string, pulling out information required for our
      * challenge response.
-     * 
+     *
      * @param challenge
      *            The challenge data.
-     * 
+     *
      * @return true if there were no errors parsing the string, false otherwise.
      * @exception MessagingException
      */
     protected boolean parseChallenge(byte[] challenge) throws MessagingException {
         realms = new ArrayList();
 
-        DigestParser parser = new DigestParser(new String(challenge));
+        DigestParser parser = null;
+        try {
+            parser = new DigestParser(new String(challenge, "US-ASCII"));
+        } catch (UnsupportedEncodingException ex) {
+        }
 
         // parse the entire string...but we ignore everything but the options we
         // support.
@@ -376,7 +380,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
         /**
          * Normal constructor.
-         * 
+         *
          * @param challenge
          *            The challenge string to be parsed.
          */
@@ -388,7 +392,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
         /**
          * Test if there are more values to parse.
-         * 
+         *
          * @return true if we've not reached the end of the challenge string,
          *         false if the challenge has been completely consumed.
          */
@@ -398,7 +402,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
         /**
          * Return the character at the current parsing position.
-         * 
+         *
          * @return The string character for the current parse position.
          */
         private char currentChar() {
@@ -424,7 +428,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
         /**
          * Parse a quoted string used with a name/value pair, accounting for
          * escape characters embedded within the string.
-         * 
+         *
          * @return The string value of the character string.
          */
         private String parseQuotedValue() {
@@ -467,7 +471,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
         /**
          * Parse a token value used with a name/value pair.
-         * 
+         *
          * @return The string value of the token. Returns null if nothing is
          *         found up to the separater.
          */
@@ -533,7 +537,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
         /**
          * Parse out a name token of a name/value pair.
-         * 
+         *
          * @return The string value of the name.
          */
         private String parseName() {
@@ -546,7 +550,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
         /**
          * Parse out a a value of a name/value pair.
-         * 
+         *
          * @return The string value associated with the name.
          */
         private String parseValue() {
@@ -564,7 +568,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
 
         /**
          * Parse a name/value pair in an DIGEST-MD5 string.
-         * 
+         *
          * @return A NameValuePair object containing the two parts of the value.
          * @exception MessagingException
          */

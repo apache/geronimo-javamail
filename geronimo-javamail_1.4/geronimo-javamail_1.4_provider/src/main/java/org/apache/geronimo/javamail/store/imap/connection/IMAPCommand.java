@@ -28,7 +28,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 
-import javax.mail.FetchProfile; 
+import javax.mail.FetchProfile;
 import javax.mail.Flags;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -58,10 +58,10 @@ import javax.mail.search.SizeTerm;
 import javax.mail.search.StringTerm;
 import javax.mail.search.SubjectTerm;
 
-import org.apache.geronimo.javamail.store.imap.ACL; 
+import org.apache.geronimo.javamail.store.imap.ACL;
 import org.apache.geronimo.javamail.store.imap.IMAPFolder;
-import org.apache.geronimo.javamail.store.imap.Rights; 
-import org.apache.geronimo.javamail.store.imap.connection.IMAPResponseTokenizer.Token; 
+import org.apache.geronimo.javamail.store.imap.Rights;
+import org.apache.geronimo.javamail.store.imap.connection.IMAPResponseTokenizer.Token;
 
 import org.apache.geronimo.javamail.util.CommandFailedException;
 
@@ -89,127 +89,127 @@ public class IMAPCommand {
         '7', '8', '9',
         '+', ','
     };
-    
+
     protected boolean needWhiteSpace = false;
 
     // our utility writer stream
     protected DataOutputStream out;
     // the real output target
     protected ByteArrayOutputStream sink;
-    // our command segment set.  If the command contains literals, then the literal     
-    // data must be sent after receiving an continue response back from the server. 
-    protected List segments = null; 
-    // the append tag for the response 
-    protected String tag; 
-    
+    // our command segment set.  If the command contains literals, then the literal
+    // data must be sent after receiving an continue response back from the server.
+    protected List segments = null;
+    // the append tag for the response
+    protected String tag;
+
     // our counter used to generate command tags.
     static protected int tagCounter = 0;
 
     /**
-     * Create an empty command. 
+     * Create an empty command.
      */
     public IMAPCommand() {
         try {
             sink = new ByteArrayOutputStream();
             out = new DataOutputStream(sink);
 
-            // write the tag data at the beginning of the command. 
-            out.writeBytes(getTag()); 
-            // need a blank separator 
-            out.write(' '); 
+            // write the tag data at the beginning of the command.
+            out.writeBytes(getTag());
+            // need a blank separator
+            out.write(' ');
         } catch (IOException e ) {
         }
     }
 
     /**
      * Create a command with an initial command string.
-     * 
+     *
      * @param command The command string used to start this command.
      */
     public IMAPCommand(String command) {
-        this(); 
-        append(command); 
+        this();
+        append(command);
     }
-    
+
     public String getTag() {
         if (tag == null) {
             // the tag needs to be non-numeric, so tack a convenient alpha character on the front.
             tag = "a" + tagCounter++;
         }
-        return tag; 
+        return tag;
     }
-    
-    
+
+
     /**
-     * Save the current segment of the command we've accumulated.  This 
-     * generally occurs because we have a literal element in the command 
-     * that's going to require a continuation response from the server before 
-     * we can send it. 
+     * Save the current segment of the command we've accumulated.  This
+     * generally occurs because we have a literal element in the command
+     * that's going to require a continuation response from the server before
+     * we can send it.
      */
-    private void saveCurrentSegment() 
+    private void saveCurrentSegment()
     {
         try {
-            out.flush();     // make sure everything is written 
-                             // get the data so far and reset the sink 
-            byte[] segment = sink.toByteArray(); 
-            sink.reset(); 
-            // most commands don't have segments, so don't create the list until we do. 
+            out.flush();     // make sure everything is written
+                             // get the data so far and reset the sink
+            byte[] segment = sink.toByteArray();
+            sink.reset();
+            // most commands don't have segments, so don't create the list until we do.
             if (segments == null) {
-                segments = new ArrayList(); 
+                segments = new ArrayList();
             }
-            // ok, we need to issue this command as a conversation. 
+            // ok, we need to issue this command as a conversation.
             segments.add(segment);
         } catch (IOException e) {
         }
     }
-    
-    
+
+
     /**
-     * Write all of the command data to the stream.  This includes the 
-     * leading tag data. 
-     * 
+     * Write all of the command data to the stream.  This includes the
+     * leading tag data.
+     *
      * @param outStream
      * @param connection
-     * 
+     *
      * @exception IOException
      * @exception MessagingException
      */
     public void writeTo(OutputStream outStream, IMAPConnection connection) throws IOException, MessagingException
     {
-        
+
         // just a simple, single string-encoded command?
         if (segments == null) {
             // make sure the output stream is flushed
-            out.flush(); 
-            // just copy the command data to the output stream 
-            sink.writeTo(outStream); 
-            // we need to end the command with a CRLF sequence. 
+            out.flush();
+            // just copy the command data to the output stream
+            sink.writeTo(outStream);
+            // we need to end the command with a CRLF sequence.
             outStream.write('\r');
             outStream.write('\n');
         }
-        // multiple-segment mode, which means we need to deal with continuation responses at 
-        // each of the literal boundaries. 
-        else { 
-            // at this point, we have a list of command pieces that must be written out, then a 
-            // continuation response checked for after each write.  Once each of these pieces is 
-            // written out, we still have command stuff pending in the out stream, which we'll tack  
-            // on to the end. 
+        // multiple-segment mode, which means we need to deal with continuation responses at
+        // each of the literal boundaries.
+        else {
+            // at this point, we have a list of command pieces that must be written out, then a
+            // continuation response checked for after each write.  Once each of these pieces is
+            // written out, we still have command stuff pending in the out stream, which we'll tack
+            // on to the end.
             for (int i = 0; i < segments.size(); i++) {
-                outStream.write((byte [])segments.get(i)); 
-                // now wait for a response from the connection.  We should be getting a  
-                // continuation response back (and might have also received some asynchronous 
-                // replies, which we'll leave in the queue for now.  If we get some status back 
-                // other than than a continue, we've got an error in our command somewhere. 
-                IMAPTaggedResponse response = connection.receiveResponse(); 
+                outStream.write((byte [])segments.get(i));
+                // now wait for a response from the connection.  We should be getting a
+                // continuation response back (and might have also received some asynchronous
+                // replies, which we'll leave in the queue for now.  If we get some status back
+                // other than than a continue, we've got an error in our command somewhere.
+                IMAPTaggedResponse response = connection.receiveResponse();
                 if (!response.isContinuation()) {
-                    throw new CommandFailedException("Error response received on a IMAP continued command:  " + response); 
+                    throw new CommandFailedException("Error response received on a IMAP continued command:  " + response);
                 }
             }
             out.flush();
-            // all leading segments written with the appropriate continuation received in reply. 
-            // just copy the command data to the output stream 
-            sink.writeTo(outStream); 
-            // we need to end the command with a CRLF sequence. 
+            // all leading segments written with the appropriate continuation received in reply.
+            // just copy the command data to the output stream
+            sink.writeTo(outStream);
+            // we need to end the command with a CRLF sequence.
             outStream.write('\r');
             outStream.write('\n');
         }
@@ -224,7 +224,7 @@ public class IMAPCommand {
      */
     public void append(String value) {
         try {
-            // add the bytes direcly 
+            // add the bytes direcly
             out.writeBytes(value);
             // assume we're needing whitespace after this (pretty much unknown).
             needWhiteSpace = true;
@@ -242,20 +242,26 @@ public class IMAPCommand {
      * @param value  The value to append.
      */
     public void appendString(String value) {
-        // work off the byte values
-        appendString(value.getBytes());
+        try {
+            // work off the byte values
+            appendString(value.getBytes("ISO8859-1"));
+        } catch (UnsupportedEncodingException e) {
+        }
     }
 
 
     /**
      * Append a string value to a command buffer.  This always appends as
      * a QUOTEDSTRING
-     * 
+     *
      * @param value  The value to append.
      */
     public void appendQuotedString(String value) {
-        // work off the byte values
-        appendQuotedString(value.getBytes());
+        try {
+            // work off the byte values
+            appendQuotedString(value.getBytes("ISO8859-1"));
+        } catch (UnsupportedEncodingException e) {
+        }
     }
 
 
@@ -270,11 +276,14 @@ public class IMAPCommand {
     public void appendEncodedString(String value) {
         // encode first.
         value = encode(value);
-        // work off the byte values
-        appendString(value.getBytes());
+        try {
+            // work off the byte values
+            appendString(value.getBytes("ISO8859-1"));
+        } catch (UnsupportedEncodingException e) {
+        }
     }
 
-    
+
     /**
      * Encode a string using the modified UTF-7 encoding.
      *
@@ -354,7 +363,7 @@ public class IMAPCommand {
         // convert the encoded string.
         return result.toString();
     }
-    
+
 
     /**
      * Encode a single buffer of characters.  This buffer will have
@@ -428,15 +437,18 @@ public class IMAPCommand {
      */
     public void appendString(String value, String charset) throws MessagingException {
         if (charset == null) {
-            // work off the byte values
-            appendString(value.getBytes());
+            try {
+                // work off the byte values
+                appendString(value.getBytes("ISO8859-1"));
+            } catch (UnsupportedEncodingException e) {
+            }
         }
         else {
             try {
                 // use the charset to extract the bytes
                 appendString(value.getBytes(charset));
-            } catch (UnsupportedEncodingException e) {
                 throw new MessagingException("Invalid text encoding");
+            } catch (UnsupportedEncodingException e) {
             }
         }
     }
@@ -467,20 +479,20 @@ public class IMAPCommand {
 
 
     /**
-     * Append an integer value to the command, converting 
+     * Append an integer value to the command, converting
      * the integer into string form.
-     * 
+     *
      * @param value  The value to append.
      */
     public void appendInteger(int value) {
         appendAtom(Integer.toString(value));
     }
 
-    
+
     /**
-     * Append a long value to the command, converting 
+     * Append a long value to the command, converting
      * the integer into string form.
-     * 
+     *
      * @param value  The value to append.
      */
     public void appendLong(long value) {
@@ -489,22 +501,25 @@ public class IMAPCommand {
 
 
     /**
-     * Append an atom value to the command.  Atoms are directly 
-     * appended without using literal encodings. 
-     * 
+     * Append an atom value to the command.  Atoms are directly
+     * appended without using literal encodings.
+     *
      * @param value  The value to append.
      */
     public void appendAtom(String value) {
-        appendAtom(value.getBytes());
+        try {
+            appendAtom(value.getBytes("ISO8859-1"));
+        } catch (UnsupportedEncodingException e) {
+        }
     }
 
 
 
     /**
-     * Append an atom to the command buffer.  Atoms are directly 
-     * appended without using literal encodings.  White space is  
-     * accounted for with the append operation. 
-     * 
+     * Append an atom to the command buffer.  Atoms are directly
+     * appended without using literal encodings.  White space is
+     * accounted for with the append operation.
+     *
      * @param value  The value to append.
      */
     public void appendAtom(byte[] value) {
@@ -519,11 +534,11 @@ public class IMAPCommand {
 
 
     /**
-     * Append an IMAP literal values to the command.  
-     * literals are written using a header with the length 
-     * specified, followed by a CRLF sequence, followed 
-     * by the literal data. 
-     * 
+     * Append an IMAP literal values to the command.
+     * literals are written using a header with the length
+     * specified, followed by a CRLF sequence, followed
+     * by the literal data.
+     *
      * @param value  The literal data to write.
      */
     public void appendLiteral(byte[] value) {
@@ -535,10 +550,10 @@ public class IMAPCommand {
     }
 
     /**
-     * Add a literal header to the buffer.  The literal 
-     * header is the literal length enclosed in a 
+     * Add a literal header to the buffer.  The literal
+     * header is the literal length enclosed in a
      * "{n}" pair, followed by a CRLF sequence.
-     * 
+     *
      * @param size   The size of the literal value.
      */
     protected void appendLiteralHeader(int size) {
@@ -547,19 +562,19 @@ public class IMAPCommand {
             out.writeByte('{');
             out.writeBytes(Integer.toString(size));
             out.writeBytes("}\r\n");
-            // the IMAP client is required to send literal data to the server by 
-            // writing the command up to the header, then waiting for a continuation 
-            // response to send the rest. 
-            saveCurrentSegment(); 
+            // the IMAP client is required to send literal data to the server by
+            // writing the command up to the header, then waiting for a continuation
+            // response to send the rest.
+            saveCurrentSegment();
         } catch (IOException e) {
         }
     }
 
 
     /**
-     * Append literal data to the command where the 
+     * Append literal data to the command where the
      * literal sourcd is a ByteArrayOutputStream.
-     * 
+     *
      * @param value  The source of the literal data.
      */
     public void appendLiteral(ByteArrayOutputStream value) {
@@ -572,10 +587,10 @@ public class IMAPCommand {
     }
 
     /**
-     * Write out a string of literal data, taking into 
-     * account the need to escape both '"' and '\' 
+     * Write out a string of literal data, taking into
+     * account the need to escape both '"' and '\'
      * characters.
-     * 
+     *
      * @param value  The bytes of the string to write.
      */
     public void appendQuotedString(byte[] value) {
@@ -599,10 +614,10 @@ public class IMAPCommand {
     }
 
     /**
-     * Mark the start of a list value being written to 
-     * the command.  A list is a sequences of different 
-     * tokens enclosed in "(" ")" pairs.  Lists can 
-     * be nested. 
+     * Mark the start of a list value being written to
+     * the command.  A list is a sequences of different
+     * tokens enclosed in "(" ")" pairs.  Lists can
+     * be nested.
      */
     public void startList() {
         try {
@@ -614,7 +629,7 @@ public class IMAPCommand {
     }
 
     /**
-     * Write out the end of the list. 
+     * Write out the end of the list.
      */
     public void endList() {
         try {
@@ -626,9 +641,9 @@ public class IMAPCommand {
 
 
     /**
-     * Add a whitespace character to the command if the 
-     * previous token was a type that required a 
-     * white space character to mark the boundary. 
+     * Add a whitespace character to the command if the
+     * previous token was a type that required a
+     * white space character to mark the boundary.
      */
     protected void conditionalWhitespace() {
         try {
@@ -646,15 +661,15 @@ public class IMAPCommand {
     /**
      * Append a body section specification to a command string.  Body
      * section specifications are of the form "[section]<start.count>".
-     * 
+     *
      * @param section  The section numeric identifier.
      * @param partName The name of the body section we want (e.g. "TEST", "HEADERS").
      */
     public void appendBodySection(String section, String partName) {
         try {
-            // we sometimes get called from the top level 
+            // we sometimes get called from the top level
             if (section == null) {
-                appendBodySection(partName); 
+                appendBodySection(partName);
                 return;
             }
 
@@ -674,7 +689,7 @@ public class IMAPCommand {
     /**
      * Append a body section specification to a command string.  Body
      * section specifications are of the form "[section]".
-     * 
+     *
      * @param partName The partname we require.
      */
     public void appendBodySection(String partName) {
@@ -758,8 +773,8 @@ public class IMAPCommand {
         // date_time strings need to be done as quoted strings because they contain blanks.
         appendString(formatter.format(d));
     }
-    
-    
+
+
     /**
      * append an IMAP search sequence from a SearchTerm.  SearchTerms
      * terms can be complex sets of terms in a tree form, so this
@@ -966,15 +981,15 @@ public class IMAPCommand {
 
         // we're going to generate this with parenthetical search keys, even if it is just a simple term.
         appendAtom("OR");
-        startList(); 
+        startList();
         // generated OR argument 1
         appendSearchTerm(terms[0], charset);
-        endList(); 
-        startList(); 
+        endList();
+        startList();
         // generated OR argument 2
         appendSearchTerm(terms[0], charset);
         // and the closing parens
-        endList(); 
+        endList();
     }
 
 
@@ -987,11 +1002,11 @@ public class IMAPCommand {
     protected void appendNot(NotTerm term, String charset) throws MessagingException {
         // we're goint to generate this with parenthetical search keys, even if it is just a simple term.
         appendAtom("NOT");
-        startList(); 
+        startList();
         // generated the NOT expression
         appendSearchTerm(term.getTerm(), charset);
         // and the closing parens
-        endList(); 
+        endList();
     }
 
 
@@ -1348,114 +1363,114 @@ public class IMAPCommand {
 
         return false;
     }
-    
-    
+
+
     /**
      * Append a FetchProfile information to an IMAPCommand
      * that's to be issued.
-     * 
+     *
      * @param profile The fetch profile we're using.
-     * 
+     *
      * @exception MessagingException
      */
     public void appendFetchProfile(FetchProfile profile) throws MessagingException {
-        // the fetch profile items are a parenthtical list passed on a 
-        // FETCH command. 
-        startList(); 
+        // the fetch profile items are a parenthtical list passed on a
+        // FETCH command.
+        startList();
         if (profile.contains(UIDFolder.FetchProfileItem.UID)) {
-            appendAtom("UID"); 
+            appendAtom("UID");
         }
         if (profile.contains(FetchProfile.Item.ENVELOPE)) {
-            // fetching the envelope involves several items 
-            appendAtom("ENVELOPE"); 
-            appendAtom("INTERNALDATE"); 
-            appendAtom("RFC822.SIZE"); 
+            // fetching the envelope involves several items
+            appendAtom("ENVELOPE");
+            appendAtom("INTERNALDATE");
+            appendAtom("RFC822.SIZE");
         }
         if (profile.contains(FetchProfile.Item.FLAGS)) {
-            appendAtom("FLAGS"); 
+            appendAtom("FLAGS");
         }
         if (profile.contains(FetchProfile.Item.CONTENT_INFO)) {
-            appendAtom("BODYSTRUCTURE"); 
+            appendAtom("BODYSTRUCTURE");
         }
         if (profile.contains(IMAPFolder.FetchProfileItem.SIZE)) {
-            appendAtom("RFC822.SIZE"); 
+            appendAtom("RFC822.SIZE");
         }
-        // There are two choices here, that are sort of redundant.  
-        // if all headers have been requested, there's no point in 
-        // adding any specifically requested one. 
+        // There are two choices here, that are sort of redundant.
+        // if all headers have been requested, there's no point in
+        // adding any specifically requested one.
         if (profile.contains(IMAPFolder.FetchProfileItem.HEADERS)) {
-            appendAtom("BODY.PEEK[HEADER]"); 
+            appendAtom("BODY.PEEK[HEADER]");
         }
         else {
-            String[] headers = profile.getHeaderNames(); 
+            String[] headers = profile.getHeaderNames();
             // have an actual list to retrieve?  need to craft this as a sublist
-            // of identified fields. 
+            // of identified fields.
             if (headers.length > 0) {
-                appendAtom("BODY.PEEK[HEADER.FIELDS]"); 
-                startList(); 
+                appendAtom("BODY.PEEK[HEADER.FIELDS]");
+                startList();
                 for (int i = 0; i < headers.length; i++) {
-                    appendAtom(headers[i]); 
+                    appendAtom(headers[i]);
                 }
-                endList(); 
+                endList();
             }
         }
-        // end the list.  
-        endList(); 
+        // end the list.
+        endList();
     }
-    
-    
+
+
     /**
-     * Append an ACL value to a command.  The ACL is the writes string name, 
+     * Append an ACL value to a command.  The ACL is the writes string name,
      * followed by the rights value.  This version uses no +/- modifier.
-     * 
+     *
      * @param acl    The ACL to append.
      */
     public void appendACL(ACL acl) {
-        appendACL(acl, null); 
+        appendACL(acl, null);
     }
-    
+
     /**
      * Append an ACL value to a command.  The ACL is the writes string name,
-     * followed by the rights value.  A +/- modifier can be added to the 
-     * // result. 
-     * 
+     * followed by the rights value.  A +/- modifier can be added to the
+     * // result.
+     *
      * @param acl      The ACL to append.
      * @param modifier The modifer string (can be null).
      */
     public void appendACL(ACL acl, String modifier) {
-        appendString(acl.getName()); 
-        String rights = acl.getRights().toString(); 
-        
+        appendString(acl.getName());
+        String rights = acl.getRights().toString();
+
         if (modifier != null) {
-            rights = modifier + rights; 
+            rights = modifier + rights;
         }
-        appendString(rights); 
+        appendString(rights);
     }
-    
-    
+
+
     /**
-     * Append a quota specification to an IMAP command. 
-     * 
+     * Append a quota specification to an IMAP command.
+     *
      * @param quota  The quota value to append.
      */
     public void appendQuota(Quota quota) {
-        appendString(quota.quotaRoot); 
-        startList(); 
+        appendString(quota.quotaRoot);
+        startList();
         for (int i = 0; i < quota.resources.length; i++) {
-            appendQuotaResource(quota.resources[i]); 
+            appendQuotaResource(quota.resources[i]);
         }
-        endList(); 
+        endList();
     }
-    
+
     /**
-     * Append a Quota.Resource element to an IMAP command.  This converts as 
-     * the resoure name, the usage value and limit value). 
-     * 
+     * Append a Quota.Resource element to an IMAP command.  This converts as
+     * the resoure name, the usage value and limit value).
+     *
      * @param resource The resource element we're appending.
      */
     public void appendQuotaResource(Quota.Resource resource) {
-        appendAtom(resource.name); 
-        // NB:  For command purposes, only the limit is used. 
+        appendAtom(resource.name);
+        // NB:  For command purposes, only the limit is used.
         appendLong(resource.limit);
     }
 }

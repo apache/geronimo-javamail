@@ -31,7 +31,7 @@ public class IMAPBodyStructureTest extends TestCase {
         InputStream in = IMAPStoreTest.class.getResourceAsStream("/imap/multipart.bodystructure");
         BufferedReader r = new BufferedReader(new InputStreamReader(in));
         try {
-            IMAPResponseTokenizer tokenizer = new IMAPResponseTokenizer(r.readLine().getBytes());
+            IMAPResponseTokenizer tokenizer = new IMAPResponseTokenizer(r.readLine().getBytes("ISO8859-1"));
             IMAPBodyStructure s = new IMAPBodyStructure(tokenizer);
             assertNull(s.disposition.getDisposition());
             assertNull(s.md5Hash);

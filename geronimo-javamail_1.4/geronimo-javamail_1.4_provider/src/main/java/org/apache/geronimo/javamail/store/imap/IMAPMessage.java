@@ -31,7 +31,7 @@ import java.util.List;
 
 import javax.activation.DataHandler;
 
-import javax.mail.Address; 
+import javax.mail.Address;
 import javax.mail.FetchProfile;
 import javax.mail.Flags;
 import javax.mail.Folder;
@@ -47,13 +47,13 @@ import javax.mail.event.MessageChangedEvent;
 
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.InternetHeaders;
-import javax.mail.internet.MailDateFormat;     
+import javax.mail.internet.MailDateFormat;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeUtility;
 
-import org.apache.geronimo.javamail.store.imap.connection.IMAPBody; 
-import org.apache.geronimo.javamail.store.imap.connection.IMAPBodyStructure; 
-import org.apache.geronimo.javamail.store.imap.connection.IMAPConnection; 
+import org.apache.geronimo.javamail.store.imap.connection.IMAPBody;
+import org.apache.geronimo.javamail.store.imap.connection.IMAPBodyStructure;
+import org.apache.geronimo.javamail.store.imap.connection.IMAPConnection;
 import org.apache.geronimo.javamail.store.imap.connection.IMAPEnvelope;
 import org.apache.geronimo.javamail.store.imap.connection.IMAPFetchDataItem;
 import org.apache.geronimo.javamail.store.imap.connection.IMAPFetchResponse;
@@ -77,9 +77,9 @@ import org.apache.geronimo.javamail.util.MailConnection;
  * @version $Rev$ $Date$
  */
 public class IMAPMessage extends MimeMessage {
-    
-    private static final byte[] CRLF = "\r\n".getBytes();
-    
+
+    private static final byte[] CRLF = new byte[]{'\r', '\n'};
+
     // the Store we're stored in (which manages the connection and other stuff).
     protected IMAPStore store;
 
@@ -87,27 +87,27 @@ public class IMAPMessage extends MimeMessage {
     protected int sequenceNumber;
     // the IMAP uid value;
     protected long uid = -1;
-    // the section identifier.  This is only really used for nested messages.  The toplevel version  
-    // will be null, and each nested message will set the appropriate part identifier 
-    protected String section; 
+    // the section identifier.  This is only really used for nested messages.  The toplevel version
+    // will be null, and each nested message will set the appropriate part identifier
+    protected String section;
     // the loaded message envelope (delayed until needed)
     protected IMAPEnvelope envelope;
     // the body structure information (also lazy loaded).
     protected IMAPBodyStructure bodyStructure;
     // the IMAP INTERNALDATE value.
     protected Date receivedDate;
-    // the size item, which is maintained separately from the body structure 
+    // the size item, which is maintained separately from the body structure
     // as it can be retrieved without getting the body structure
-    protected int size; 
-    // turned on once we've requested the entire header set. 
-    protected boolean allHeadersRetrieved = false; 
+    protected int size;
+    // turned on once we've requested the entire header set.
+    protected boolean allHeadersRetrieved = false;
     // singleton date formatter for this class.
     static protected MailDateFormat dateFormat = new MailDateFormat();
 
 
     /**
      * Contruct an IMAPMessage instance.
-     * 
+     *
      * @param folder   The hosting folder for the message.
      * @param store    The Store owning the article (and folder).
      * @param msgnum   The article message number.  This is assigned by the Folder, and is unique
@@ -117,15 +117,15 @@ public class IMAPMessage extends MimeMessage {
      *                 change whenever messages are expunged.  This is the server retrieval number
      *                 of the message, which needs to be synchronized with status updates
      *                 sent from the server.
-     * 
+     *
      * @exception MessagingException
      */
 	IMAPMessage(IMAPFolder folder, IMAPStore store, int msgnum, int sequenceNumber) {
 		super(folder, msgnum);
         this.sequenceNumber = sequenceNumber;
 		this.store = store;
-        // The default constructor creates an empty Flags item.  We need to clear this out so we 
-        // know if the flags need to be fetched from the server when requested.  
+        // The default constructor creates an empty Flags item.  We need to clear this out so we
+        // know if the flags need to be fetched from the server when requested.
         flags = null;
         // make sure this is a totally fresh set of headers.  We'll fill things in as we retrieve them.
         headers = new InternetHeaders();
@@ -147,7 +147,7 @@ public class IMAPMessage extends MimeMessage {
             sequenceNumber = -1;
         }
     }
-    
+
 
     /**
      * Return a copy the flags associated with this message.
@@ -156,9 +156,9 @@ public class IMAPMessage extends MimeMessage {
      * @throws MessagingException if there was a problem accessing the Store
      */
     public synchronized Flags getFlags() throws MessagingException {
-        // load the flags, if needed 
-        loadFlags(); 
-        return super.getFlags(); 
+        // load the flags, if needed
+        loadFlags();
+        return super.getFlags();
     }
 
 
@@ -171,9 +171,9 @@ public class IMAPMessage extends MimeMessage {
      * @throws MessagingException if there was a problem accessing the Store
      */
     public synchronized boolean isSet(Flags.Flag flag) throws MessagingException {
-        // load the flags, if needed 
-        loadFlags(); 
-        return super.isSet(flag); 
+        // load the flags, if needed
+        loadFlags();
+        return super.isSet(flag);
     }
 
     /**
@@ -187,31 +187,31 @@ public class IMAPMessage extends MimeMessage {
     public synchronized void setFlags(Flags flag, boolean set) throws MessagingException {
         // make sure this is in a valid state.
         checkValidity();
-        
-        // we need to ensure that we're the only ones with access to the folder's 
-        // message cache any time we need to talk to the server.  This needs to be 
-        // held until after we release the connection so that any pending EXPUNGE 
-        // untagged responses are processed before the next time the folder connection is 
-        // used. 
+
+        // we need to ensure that we're the only ones with access to the folder's
+        // message cache any time we need to talk to the server.  This needs to be
+        // held until after we release the connection so that any pending EXPUNGE
+        // untagged responses are processed before the next time the folder connection is
+        // used.
         synchronized (folder) {
             IMAPConnection connection = getConnection();
 
             try {
-                // set the flags for this item and update the 
-                // internal state with the new values returned from the 
-                // server. 
-                flags = connection.setFlags(sequenceNumber, flag, set); 
+                // set the flags for this item and update the
+                // internal state with the new values returned from the
+                // server.
+                flags = connection.setFlags(sequenceNumber, flag, set);
             } finally {
-                releaseConnection(connection); 
+                releaseConnection(connection);
             }
         }
     }
 
 
     /**
-     * Return an InputStream instance for accessing the 
+     * Return an InputStream instance for accessing the
      * message content.
-     * 
+     *
      * @return An InputStream instance for accessing the content
      *         (body) of the message.
      * @exception MessagingException
@@ -240,7 +240,7 @@ public class IMAPMessage extends MimeMessage {
      * @exception IOException
      * @exception MessagingException
      */
-    public void writeTo(OutputStream out) throws IOException, MessagingException {                      
+    public void writeTo(OutputStream out) throws IOException, MessagingException {
         // no content loaded yet?
         if (content == null) {
             // make sure we're still valid
@@ -248,26 +248,26 @@ public class IMAPMessage extends MimeMessage {
             // make sure the content is fully loaded
             loadContent();
         }
-        
+
         loadHeaders();
-        
+
         Enumeration e = headers.getAllHeaderLines();
         while(e.hasMoreElements()) {
             String line = (String)e.nextElement();
-            out.write(line.getBytes());
+            out.write(line.getBytes("ISO8859-1"));
             out.write(CRLF);
         }
         out.write(CRLF);
         out.write(CRLF);
         out.write(content);
     }
-    
+
 	/******************************************************************
-	 * Following is a set of methods that deal with information in the 
-	 * envelope.  These methods ensure the enveloper is loaded and   
-     * retrieve the information.                         
+	 * Following is a set of methods that deal with information in the
+	 * envelope.  These methods ensure the enveloper is loaded and
+     * retrieve the information.
 	 ********************************************************************/
-     
+
 
     /**
      * Get the message "From" addresses.  This looks first at the
@@ -281,14 +281,14 @@ public class IMAPMessage extends MimeMessage {
     public Address[] getFrom() throws MessagingException {
         // make sure we've retrieved the envelope information.
         loadEnvelope();
-        // make sure we return a copy of the array so this can't be changed. 
-        Address[] addresses = envelope.from; 
+        // make sure we return a copy of the array so this can't be changed.
+        Address[] addresses = envelope.from;
         if (addresses == null) {
             return null;
         }
-        return (Address[])addresses.clone(); 
+        return (Address[])addresses.clone();
     }
-    
+
 
     /**
      * Return the "Sender" header as an address.
@@ -299,13 +299,13 @@ public class IMAPMessage extends MimeMessage {
     public Address getSender() throws MessagingException {
         // make sure we've retrieved the envelope information.
         loadEnvelope();
-        // make sure we return a copy of the array so this can't be changed. 
-        Address[] addresses = envelope.sender; 
+        // make sure we return a copy of the array so this can't be changed.
+        Address[] addresses = envelope.sender;
         if (addresses == null) {
             return null;
         }
         // There's only a single sender, despite IMAP potentially returning a list
-        return addresses[0]; 
+        return addresses[0];
     }
 
     /**
@@ -325,26 +325,26 @@ public class IMAPMessage extends MimeMessage {
     public Address[] getRecipients(Message.RecipientType type) throws MessagingException {
         // make sure we've retrieved the envelope information.
         loadEnvelope();
-        Address[] addresses = null; 
-        
+        Address[] addresses = null;
+
         if (type == Message.RecipientType.TO) {
-            addresses = envelope.to; 
+            addresses = envelope.to;
         }
         else if (type == Message.RecipientType.CC) {
-            addresses = envelope.cc; 
+            addresses = envelope.cc;
         }
         else if (type == Message.RecipientType.BCC) {
-            addresses = envelope.bcc; 
+            addresses = envelope.bcc;
         }
         else {
-            // this could be a newsgroup type, which will tickle the message headers. 
+            // this could be a newsgroup type, which will tickle the message headers.
             return super.getRecipients(type);
         }
-        // make sure we return a copy of the array so this can't be changed. 
+        // make sure we return a copy of the array so this can't be changed.
         if (addresses == null) {
             return null;
         }
-        return (Address[])addresses.clone(); 
+        return (Address[])addresses.clone();
     }
 
     /**
@@ -358,12 +358,12 @@ public class IMAPMessage extends MimeMessage {
     public Address[] getReplyTo() throws MessagingException {
         // make sure we've retrieved the envelope information.
         loadEnvelope();
-        // make sure we return a copy of the array so this can't be changed. 
-        Address[] addresses = envelope.replyTo; 
+        // make sure we return a copy of the array so this can't be changed.
+        Address[] addresses = envelope.replyTo;
         if (addresses == null) {
             return null;
         }
-        return (Address[])addresses.clone(); 
+        return (Address[])addresses.clone();
     }
 
     /**
@@ -378,16 +378,16 @@ public class IMAPMessage extends MimeMessage {
     public String getSubject() throws MessagingException {
         // make sure we've retrieved the envelope information.
         loadEnvelope();
-        
+
         if (envelope.subject == null) {
-            return null; 
+            return null;
         }
-        // the subject could be encoded.  If there is a decoding error, 
-        // return the raw subject string. 
+        // the subject could be encoded.  If there is a decoding error,
+        // return the raw subject string.
         try {
-            return MimeUtility.decodeText(envelope.subject); 
+            return MimeUtility.decodeText(envelope.subject);
         } catch (UnsupportedEncodingException e) {
-            return envelope.subject; 
+            return envelope.subject;
         }
     }
 
@@ -401,8 +401,8 @@ public class IMAPMessage extends MimeMessage {
     public Date getSentDate() throws MessagingException {
         // make sure we've retrieved the envelope information.
         loadEnvelope();
-        // just return that directly 
-        return envelope.date; 
+        // just return that directly
+        return envelope.date;
     }
 
 
@@ -414,7 +414,7 @@ public class IMAPMessage extends MimeMessage {
      */
     public Date getReceivedDate() throws MessagingException {
         loadEnvelope();
-        return receivedDate; 
+        return receivedDate;
     }
 
 
@@ -426,12 +426,12 @@ public class IMAPMessage extends MimeMessage {
      * @exception MessagingException
      */
 	public int getSize() throws MessagingException {
-        // make sure we've retrieved the envelope information.  We load the 
-        // size when we retrieve that. 
+        // make sure we've retrieved the envelope information.  We load the
+        // size when we retrieve that.
         loadEnvelope();
-        return size;                          
+        return size;
 	}
-    
+
 
     /**
      * Get a line count for the IMAP message.  This is potentially
@@ -443,7 +443,7 @@ public class IMAPMessage extends MimeMessage {
      */
     public int getLineCount() throws MessagingException {
         loadBodyStructure();
-        return bodyStructure.lines; 
+        return bodyStructure.lines;
     }
 
     /**
@@ -467,7 +467,7 @@ public class IMAPMessage extends MimeMessage {
      */
     public String getContentType() throws MessagingException {
         loadBodyStructure();
-        return bodyStructure.mimeType.toString(); 
+        return bodyStructure.mimeType.toString();
     }
 
 
@@ -482,7 +482,7 @@ public class IMAPMessage extends MimeMessage {
      */
     public boolean isMimeType(String type) throws MessagingException {
         loadBodyStructure();
-        return bodyStructure.mimeType.match(type); 
+        return bodyStructure.mimeType.match(type);
     }
 
     /**
@@ -496,9 +496,9 @@ public class IMAPMessage extends MimeMessage {
     public String getDisposition() throws MessagingException {
         loadBodyStructure();
         if (bodyStructure.disposition != null) {
-            return bodyStructure.disposition.getDisposition(); 
+            return bodyStructure.disposition.getDisposition();
         }
-        return null; 
+        return null;
     }
 
     /**
@@ -510,7 +510,7 @@ public class IMAPMessage extends MimeMessage {
      */
     public String getEncoding() throws MessagingException {
         loadBodyStructure();
-        return bodyStructure.transferEncoding; 
+        return bodyStructure.transferEncoding;
     }
 
     /**
@@ -522,95 +522,95 @@ public class IMAPMessage extends MimeMessage {
      */
     public String getContentID() throws MessagingException {
         loadBodyStructure();
-        return bodyStructure.contentID;         
+        return bodyStructure.contentID;
     }
 
     public String getContentMD5() throws MessagingException {
         loadBodyStructure();
-        return bodyStructure.md5Hash;         
+        return bodyStructure.md5Hash;
     }
-    
-    
+
+
     public String getDescription() throws MessagingException {
         loadBodyStructure();
-        
+
         if (bodyStructure.contentDescription == null) {
-            return null; 
+            return null;
         }
-        // the subject could be encoded.  If there is a decoding error, 
-        // return the raw subject string. 
+        // the subject could be encoded.  If there is a decoding error,
+        // return the raw subject string.
         try {
-            return MimeUtility.decodeText(bodyStructure.contentDescription); 
+            return MimeUtility.decodeText(bodyStructure.contentDescription);
         } catch (UnsupportedEncodingException e) {
             return bodyStructure.contentDescription;
         }
     }
 
     /**
-     * Return the content languages associated with this 
+     * Return the content languages associated with this
      * message.
-     * 
-     * @return 
+     *
+     * @return
      * @exception MessagingException
      */
     public String[] getContentLanguage() throws MessagingException {
         loadBodyStructure();
-        
+
         if (!bodyStructure.languages.isEmpty()) {
-            return (String[])bodyStructure.languages.toArray(new String[bodyStructure.languages.size()]); 
+            return (String[])bodyStructure.languages.toArray(new String[bodyStructure.languages.size()]);
         }
-        return null; 
+        return null;
     }
 
     public String getMessageID() throws MessagingException {
         loadEnvelope();
-        return envelope.messageID; 
+        return envelope.messageID;
     }
-    
+
     public void setFrom(Address address) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void addFrom(Address[] address) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setSender(Address address) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setRecipients(Message.RecipientType type, Address[] addresses) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setRecipients(Message.RecipientType type, String address) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void addRecipients(Message.RecipientType type, Address[] address) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setReplyTo(Address[] address) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setSubject(String subject) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setSubject(String subject, String charset) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setSentDate(Date sent) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setDisposition(String disposition) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setContentID(String cid) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
@@ -622,7 +622,7 @@ public class IMAPMessage extends MimeMessage {
     public void setDescription(String description) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
     public void setDescription(String description, String charset) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
@@ -630,7 +630,7 @@ public class IMAPMessage extends MimeMessage {
     public void setContentLanguage(String[] languages) throws MessagingException {
         throw new IllegalWriteException("IMAP messages are read-only");
     }
-    
+
 
 	/******************************************************************
 	 * Following is a set of methods that deal with headers
@@ -753,7 +753,7 @@ public class IMAPMessage extends MimeMessage {
      * @exception MessagingException
      */
     public synchronized DataHandler getDataHandler() throws MessagingException {
-        // check the validity and make sure we have the body structure information. 
+        // check the validity and make sure we have the body structure information.
         checkValidity();
         loadBodyStructure();
         if (dh == null) {
@@ -763,8 +763,8 @@ public class IMAPMessage extends MimeMessage {
                 return dh;
             }
             else if (bodyStructure.isAttachedMessage()) {
-                dh = new DataHandler(new IMAPAttachedMessage(this, section, bodyStructure.nestedEnvelope, bodyStructure.nestedBody), 
-                     bodyStructure.mimeType.toString()); 
+                dh = new DataHandler(new IMAPAttachedMessage(this, section, bodyStructure.nestedEnvelope, bodyStructure.nestedBody),
+                     bodyStructure.mimeType.toString());
                 return dh;
             }
         }
@@ -789,32 +789,32 @@ public class IMAPMessage extends MimeMessage {
         headers = new InternetHeaders(in);
         allHeadersRetrieved = true;
     }
-    
+
     /**
-     * Load the flag set for this message from the server. 
-     * 
+     * Load the flag set for this message from the server.
+     *
      * @exception MessagingeException
      */
     public void loadFlags() throws MessagingException {
         // make sure this is in a valid state.
         checkValidity();
-        // if the flags are already loaded, nothing to do 
+        // if the flags are already loaded, nothing to do
         if (flags != null) {
-            return; 
+            return;
         }
-        // we need to ensure that we're the only ones with access to the folder's 
-        // message cache any time we need to talk to the server.  This needs to be 
-        // held until after we release the connection so that any pending EXPUNGE 
-        // untagged responses are processed before the next time the folder connection is 
-        // used. 
+        // we need to ensure that we're the only ones with access to the folder's
+        // message cache any time we need to talk to the server.  This needs to be
+        // held until after we release the connection so that any pending EXPUNGE
+        // untagged responses are processed before the next time the folder connection is
+        // used.
         synchronized (folder) {
             IMAPConnection connection = getConnection();
 
             try {
-                // fetch the flags for this item. 
-                flags = connection.fetchFlags(sequenceNumber); 
+                // fetch the flags for this item.
+                flags = connection.fetchFlags(sequenceNumber);
             } finally {
-                releaseConnection(connection); 
+                releaseConnection(connection);
             }
         }
     }
@@ -833,21 +833,21 @@ public class IMAPMessage extends MimeMessage {
 
         // make sure this is in a valid state.
         checkValidity();
-        // we need to ensure that we're the only ones with access to the folder's 
-        // message cache any time we need to talk to the server.  This needs to be 
-        // held until after we release the connection so that any pending EXPUNGE 
-        // untagged responses are processed before the next time the folder connection is 
-        // used. 
+        // we need to ensure that we're the only ones with access to the folder's
+        // message cache any time we need to talk to the server.  This needs to be
+        // held until after we release the connection so that any pending EXPUNGE
+        // untagged responses are processed before the next time the folder connection is
+        // used.
         synchronized (folder) {
             IMAPConnection connection = getConnection();
 
             try {
-                // get the headers and set 
+                // get the headers and set
                 headers = connection.fetchHeaders(sequenceNumber, section);
-                // we have the entire header set, not just a subset. 
-                allHeadersRetrieved = true;                                               
+                // we have the entire header set, not just a subset.
+                allHeadersRetrieved = true;
             } finally {
-                releaseConnection(connection); 
+                releaseConnection(connection);
             }
         }
     }
@@ -858,7 +858,7 @@ public class IMAPMessage extends MimeMessage {
      * information.
      *
      * @exception MessagingException
-     */                                
+     */
     protected synchronized void loadEnvelope() throws MessagingException {
         // don't retrieve if already loaded.
         if (envelope != null) {
@@ -867,28 +867,28 @@ public class IMAPMessage extends MimeMessage {
 
         // make sure this is in a valid state.
         checkValidity();
-        // we need to ensure that we're the only ones with access to the folder's 
-        // message cache any time we need to talk to the server.  This needs to be 
-        // held until after we release the connection so that any pending EXPUNGE 
-        // untagged responses are processed before the next time the folder connection is 
-        // used. 
+        // we need to ensure that we're the only ones with access to the folder's
+        // message cache any time we need to talk to the server.  This needs to be
+        // held until after we release the connection so that any pending EXPUNGE
+        // untagged responses are processed before the next time the folder connection is
+        // used.
         synchronized (folder) {
             IMAPConnection connection = getConnection();
             try {
                 // fetch the envelope information for this
                 List fetches = connection.fetchEnvelope(sequenceNumber);
-                // now process all of the fetch responses before releasing the folder lock.  
-                // it's possible that an unsolicited update on another thread might try to 
-                // make an update, causing a potential deadlock. 
+                // now process all of the fetch responses before releasing the folder lock.
+                // it's possible that an unsolicited update on another thread might try to
+                // make an update, causing a potential deadlock.
                 for (int i = 0; i < fetches.size(); i++) {
                     // get the returned data items from each of the fetch responses
-                    // and process. 
+                    // and process.
                     IMAPFetchResponse fetch = (IMAPFetchResponse)fetches.get(i);
-                    // update the internal info 
-                    updateMessageInformation(fetch); 
+                    // update the internal info
+                    updateMessageInformation(fetch);
                 }
             } finally {
-                releaseConnection(connection); 
+                releaseConnection(connection);
             }
         }
     }
@@ -901,8 +901,8 @@ public class IMAPMessage extends MimeMessage {
      * @exception MessagingException
      */
     protected synchronized void updateEnvelope(IMAPEnvelope envelope) throws MessagingException {
-        // set the envelope item 
-        this.envelope = envelope; 
+        // set the envelope item
+        this.envelope = envelope;
 
         // copy header type information from the envelope into the headers.
         updateHeader("From", envelope.from);
@@ -933,24 +933,24 @@ public class IMAPMessage extends MimeMessage {
 
         // make sure this is in a valid state.
         checkValidity();
-        // we need to ensure that we're the only ones with access to the folder's 
-        // message cache any time we need to talk to the server.  This needs to be 
-        // held until after we release the connection so that any pending EXPUNGE 
-        // untagged responses are processed before the next time the folder connection is 
-        // used. 
+        // we need to ensure that we're the only ones with access to the folder's
+        // message cache any time we need to talk to the server.  This needs to be
+        // held until after we release the connection so that any pending EXPUNGE
+        // untagged responses are processed before the next time the folder connection is
+        // used.
         synchronized (folder) {
             IMAPConnection connection = getConnection();
             try {
                 // fetch the envelope information for this
                 bodyStructure = connection.fetchBodyStructure(sequenceNumber);
-                // go update all of the information 
+                // go update all of the information
             } finally {
-                releaseConnection(connection); 
+                releaseConnection(connection);
             }
-            
-            // update this before we release the folder lock so we can avoid 
-            // deadlock. 
-            updateBodyStructure(bodyStructure); 
+
+            // update this before we release the folder lock so we can avoid
+            // deadlock.
+            updateBodyStructure(bodyStructure);
         }
     }
 
@@ -961,9 +961,9 @@ public class IMAPMessage extends MimeMessage {
      * @exception MessagingException
      */
     protected synchronized void updateBodyStructure(IMAPBodyStructure structure) throws MessagingException {
-        // save the reference. 
-        bodyStructure = structure; 
-        // now update various headers with the information from the body structure 
+        // save the reference.
+        bodyStructure = structure;
+        // now update various headers with the information from the body structure
 
         // now update header information with the body structure data.
         if (bodyStructure.lines != -1) {
@@ -972,9 +972,9 @@ public class IMAPMessage extends MimeMessage {
 
         // languages are a little more complicated
         if (bodyStructure.languages != null) {
-            // this is a duplicate of what happens in the super class, but 
-            // the superclass methods call setHeader(), which we override and 
-            // throw an exception for.  We need to set the headers ourselves. 
+            // this is a duplicate of what happens in the super class, but
+            // the superclass methods call setHeader(), which we override and
+            // throw an exception for.  We need to set the headers ourselves.
             if (bodyStructure.languages.size() == 1) {
                 updateHeader("Content-Language", (String)bodyStructure.languages.get(0));
             }
@@ -1010,24 +1010,24 @@ public class IMAPMessage extends MimeMessage {
         if (content != null) {
             return;
         }
-        
-        // we need to ensure that we're the only ones with access to the folder's 
-        // message cache any time we need to talk to the server.  This needs to be 
-        // held until after we release the connection so that any pending EXPUNGE 
-        // untagged responses are processed before the next time the folder connection is 
-        // used. 
+
+        // we need to ensure that we're the only ones with access to the folder's
+        // message cache any time we need to talk to the server.  This needs to be
+        // held until after we release the connection so that any pending EXPUNGE
+        // untagged responses are processed before the next time the folder connection is
+        // used.
         synchronized (folder) {
             IMAPConnection connection = getConnection();
             try {
-                // load the content from the server. 
-                content = connection.fetchContent(getSequenceNumber(), section); 
+                // load the content from the server.
+                content = connection.fetchContent(getSequenceNumber(), section);
             } finally {
-                releaseConnection(connection); 
+                releaseConnection(connection);
             }
         }
     }
 
-    
+
     /**
      * Retrieve the sequence number assigned to this message.
      *
@@ -1037,16 +1037,16 @@ public class IMAPMessage extends MimeMessage {
     int getSequenceNumber() {
         return sequenceNumber;
     }
-    
+
     /**
-     * Set the sequence number for the message.  This 
-     * is updated whenever messages get expunged from 
-     * the folder. 
-     * 
+     * Set the sequence number for the message.  This
+     * is updated whenever messages get expunged from
+     * the folder.
+     *
      * @param s      The new sequence number.
      */
     void setSequenceNumber(int s) {
-        sequenceNumber = s; 
+        sequenceNumber = s;
     }
 
 
@@ -1068,7 +1068,7 @@ public class IMAPMessage extends MimeMessage {
         this.uid = uid;
     }
 
-    
+
     /**
      * get the current connection pool attached to the folder.  We need
      * to do this dynamically, to A) ensure we're only accessing an
@@ -1081,11 +1081,11 @@ public class IMAPMessage extends MimeMessage {
         // the folder owns everything.
         return ((IMAPFolder)folder).getMessageConnection();
     }
-    
+
     /**
-     * Release the connection back to the Folder after performing an operation 
+     * Release the connection back to the Folder after performing an operation
      * that requires a connection.
-     * 
+     *
      * @param connection The previously acquired connection.
      */
     protected void releaseConnection(IMAPConnection connection) throws MessagingException {
@@ -1102,7 +1102,7 @@ public class IMAPMessage extends MimeMessage {
      * @exception MessagingException
      */
     protected void checkValidity() throws MessagingException {
-        checkValidity(false); 
+        checkValidity(false);
     }
 
 
@@ -1114,24 +1114,24 @@ public class IMAPMessage extends MimeMessage {
      * @exception MessagingException
      */
     protected void checkValidity(boolean update) throws MessagingException {
-        // we need to ensure that we're the only ones with access to the folder's 
-        // message cache any time we need to talk to the server.  This needs to be 
-        // held until after we release the connection so that any pending EXPUNGE 
-        // untagged responses are processed before the next time the folder connection is 
-        // used. 
+        // we need to ensure that we're the only ones with access to the folder's
+        // message cache any time we need to talk to the server.  This needs to be
+        // held until after we release the connection so that any pending EXPUNGE
+        // untagged responses are processed before the next time the folder connection is
+        // used.
         if (update) {
             synchronized (folder) {
                 // have the connection update the folder status.  This might result in this message
                 // changing its state to expunged.  It might also result in an exception if the
                 // folder has been closed.
-                IMAPConnection connection = getConnection(); 
+                IMAPConnection connection = getConnection();
 
                 try {
                     connection.updateMailboxStatus();
                 } finally {
-                    // this will force any expunged messages to be processed before we release 
-                    // the lock. 
-                    releaseConnection(connection); 
+                    // this will force any expunged messages to be processed before we release
+                    // the lock.
+                    releaseConnection(connection);
                 }
             }
         }
@@ -1141,160 +1141,160 @@ public class IMAPMessage extends MimeMessage {
             throw new MessageRemovedException("Illegal opertion on a deleted message");
         }
     }
-    
-    
+
+
     /**
-     * Evaluate whether this message requires any of the information 
-     * in a FetchProfile to be fetched from the server.  If the messages 
+     * Evaluate whether this message requires any of the information
+     * in a FetchProfile to be fetched from the server.  If the messages
      * already contains the information in the profile, it returns false.
-     * This allows IMAPFolder to optimize fetch() requests to just the 
+     * This allows IMAPFolder to optimize fetch() requests to just the
      * messages that are missing any of the requested information.
-     * 
-     * NOTE:  If any of the items in the profile are missing, then this 
-     * message will be updated with ALL of the items.  
-     * 
+     *
+     * NOTE:  If any of the items in the profile are missing, then this
+     * message will be updated with ALL of the items.
+     *
      * @param profile The FetchProfile indicating the information that should be prefetched.
-     * 
-     * @return true if any of the profile information requires fetching.  false if this 
+     *
+     * @return true if any of the profile information requires fetching.  false if this
      *         message already contains the given information.
      */
     protected boolean evaluateFetch(FetchProfile profile) {
         // the fetch profile can contain a number of different item types.  Validate
-        // whether we need any of these and return true on the first mismatch. 
-        
-        // the UID is a common fetch request, put it first. 
+        // whether we need any of these and return true on the first mismatch.
+
+        // the UID is a common fetch request, put it first.
         if (profile.contains(UIDFolder.FetchProfileItem.UID) && uid == -1) {
-            return true; 
+            return true;
         }
         if (profile.contains(FetchProfile.Item.ENVELOPE) && envelope == null) {
-            return true; 
+            return true;
         }
         if (profile.contains(FetchProfile.Item.FLAGS) && flags == null) {
-            return true; 
+            return true;
         }
         if (profile.contains(FetchProfile.Item.CONTENT_INFO) && bodyStructure == null) {
-            return true; 
+            return true;
         }
-        // The following profile items are our implementation of items that the 
-        // Sun IMAPFolder implementation supports.  
+        // The following profile items are our implementation of items that the
+        // Sun IMAPFolder implementation supports.
         if (profile.contains(IMAPFolder.FetchProfileItem.HEADERS) && !allHeadersRetrieved) {
-            return true; 
+            return true;
         }
         if (profile.contains(IMAPFolder.FetchProfileItem.SIZE) && bodyStructure.bodySize < 0) {
-            return true; 
+            return true;
         }
-        // last bit after checking each of the information types is to see if 
-        // particular headers have been requested and whether those are on the 
-        // set we do have loaded. 
-        String [] requestedHeaders = profile.getHeaderNames(); 
-         
-        // ok, any missing header in the list is enough to force us to request the 
-        // information. 
+        // last bit after checking each of the information types is to see if
+        // particular headers have been requested and whether those are on the
+        // set we do have loaded.
+        String [] requestedHeaders = profile.getHeaderNames();
+
+        // ok, any missing header in the list is enough to force us to request the
+        // information.
         for (int i = 0; i < requestedHeaders.length; i++) {
             if (headers.getHeader(requestedHeaders[i]) == null) {
-                return true; 
+                return true;
             }
         }
-        // this message, at least, does not need anything fetched. 
-        return false; 
+        // this message, at least, does not need anything fetched.
+        return false;
     }
-    
+
     /**
-     * Update a message instance with information retrieved via an IMAP FETCH 
+     * Update a message instance with information retrieved via an IMAP FETCH
      * command.  The command response for this message may contain multiple pieces
      * that we need to process.
-     * 
+     *
      * @param response The response line, which may contain multiple data items.
-     * 
+     *
      * @exception MessagingException
      */
     void updateMessageInformation(IMAPFetchResponse response) throws MessagingException {
-        // get the list of data items associated with this response.  We can have 
-        // a large number of items returned in a single update. 
-        List items = response.getDataItems(); 
-        
+        // get the list of data items associated with this response.  We can have
+        // a large number of items returned in a single update.
+        List items = response.getDataItems();
+
         for (int i = 0; i < items.size(); i++) {
-            IMAPFetchDataItem item = (IMAPFetchDataItem)items.get(i); 
-            
+            IMAPFetchDataItem item = (IMAPFetchDataItem)items.get(i);
+
             switch (item.getType()) {
-                // if the envelope has been requested, we'll end up with all of these items. 
+                // if the envelope has been requested, we'll end up with all of these items.
                 case IMAPFetchDataItem.ENVELOPE:
-                    // update the envelope and map the envelope items into the headers. 
+                    // update the envelope and map the envelope items into the headers.
                     updateEnvelope((IMAPEnvelope)item);
                     break;
                 case IMAPFetchDataItem.INTERNALDATE:
                     receivedDate = ((IMAPInternalDate)item).getDate();;
                     break;
                 case IMAPFetchDataItem.SIZE:
-                    size = ((IMAPMessageSize)item).size;      
+                    size = ((IMAPMessageSize)item).size;
                     break;
                 case IMAPFetchDataItem.UID:
-                    uid = ((IMAPUid)item).uid;       
-                    // make sure the folder knows about the UID update. 
-                    ((IMAPFolder)folder).addToUidCache(new Long(uid), this); 
-                    break; 
-                case IMAPFetchDataItem.BODYSTRUCTURE: 
-                    updateBodyStructure((IMAPBodyStructure)item); 
-                    break; 
-                    // a partial or full header update 
+                    uid = ((IMAPUid)item).uid;
+                    // make sure the folder knows about the UID update.
+                    ((IMAPFolder)folder).addToUidCache(new Long(uid), this);
+                    break;
+                case IMAPFetchDataItem.BODYSTRUCTURE:
+                    updateBodyStructure((IMAPBodyStructure)item);
+                    break;
+                    // a partial or full header update
                 case IMAPFetchDataItem.HEADER:
                 {
-                    // if we've fetched the complete set, then replace what we have 
-                    IMAPInternetHeader h = (IMAPInternetHeader)item; 
+                    // if we've fetched the complete set, then replace what we have
+                    IMAPInternetHeader h = (IMAPInternetHeader)item;
                     if (h.isComplete()) {
-                        // we've got a complete header set now. 
-                        this.headers = h.headers;     
-                        allHeadersRetrieved = true; 
+                        // we've got a complete header set now.
+                        this.headers = h.headers;
+                        allHeadersRetrieved = true;
                     }
                     else {
-                        // need to merge the requested headers in with 
-                        // our existing set.  We need to be careful, since we 
-                        // don't want to add duplicates. 
-                        mergeHeaders(h.headers); 
+                        // need to merge the requested headers in with
+                        // our existing set.  We need to be careful, since we
+                        // don't want to add duplicates.
+                        mergeHeaders(h.headers);
                     }
                 }
                 default:
             }
         }
     }
-    
-    
+
+
     /**
-     * Merge a subset of the requested headers with our existing partial set. 
-     * The new set will contain all headers requested from the server, plus 
+     * Merge a subset of the requested headers with our existing partial set.
+     * The new set will contain all headers requested from the server, plus
      * any of our existing headers that were not included in the retrieved set.
-     * 
+     *
      * @param newHeaders The retrieved set of headers.
      */
     protected synchronized void mergeHeaders(InternetHeaders newHeaders) {
-        // This is sort of tricky to manage.  The input headers object is a fresh set  
+        // This is sort of tricky to manage.  The input headers object is a fresh set
         // retrieved from the server, but it's a subset of the headers.  Our existing set
-        // might not be complete, but it may contain duplicates of information in the 
-        // retrieved set, plus headers that are not in the retrieved set.  To keep from 
-        // adding duplicates, we'll only add headers that are not in the retrieved set to 
-        // that set.   
-        
-        // start by running through the list of headers 
-        Enumeration e = headers.getAllHeaders(); 
-        
+        // might not be complete, but it may contain duplicates of information in the
+        // retrieved set, plus headers that are not in the retrieved set.  To keep from
+        // adding duplicates, we'll only add headers that are not in the retrieved set to
+        // that set.
+
+        // start by running through the list of headers
+        Enumeration e = headers.getAllHeaders();
+
         while (e.hasMoreElements()) {
-            Header header = (Header)e.nextElement(); 
-            // if there are no headers with this name in the new set, then 
-            // we can add this.  Note that to add the header, we need to 
-            // retrieve all instances by this name and add them as a unit.  
-            // When we hit one of the duplicates again with the enumeration, 
-            // we'll skip it then because the merge target will have everything. 
+            Header header = (Header)e.nextElement();
+            // if there are no headers with this name in the new set, then
+            // we can add this.  Note that to add the header, we need to
+            // retrieve all instances by this name and add them as a unit.
+            // When we hit one of the duplicates again with the enumeration,
+            // we'll skip it then because the merge target will have everything.
             if (newHeaders.getHeader(header.getName()) == null) {
-                // get all occurrences of this name and stuff them into the 
-                // new list 
-                String name = header.getName(); 
-                String[] a = headers.getHeader(name); 
+                // get all occurrences of this name and stuff them into the
+                // new list
+                String name = header.getName();
+                String[] a = headers.getHeader(name);
                 for (int i = 0; i < a.length; i++) {
-                    newHeaders.addHeader(name, a[i]); 
+                    newHeaders.addHeader(name, a[i]);
                 }
             }
         }
         // and replace the current header set
-        headers = newHeaders; 
+        headers = newHeaders;
     }
 }

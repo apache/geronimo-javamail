@@ -18,6 +18,7 @@
 package org.apache.geronimo.javamail.store.imap.connection;
 
 import java.io.ByteArrayOutputStream;
+import java.io.UnsupportedEncodingException;
 
 /**
  * Simple extension to the ByteArrayOutputStream to allow inspection
@@ -120,11 +121,14 @@ public class IMAPResponseBuffer extends ByteArrayOutputStream {
                 return -1;
             }
 
-            String lenString = new String(buf, literalStart + 1, size() - (literalStart + 2));
             try {
-                return Integer.parseInt(lenString);
-            } catch (NumberFormatException e) {
-                e.printStackTrace(); 
+                String lenString = new String(buf, literalStart + 1, size() - (literalStart + 2), "US-ASCII");
+                try {
+                    return Integer.parseInt(lenString);
+                } catch (NumberFormatException e) {
+                }
+            } catch (UnsupportedEncodingException ex) {
+                // should never happen
             }
         }
         // not a literal
