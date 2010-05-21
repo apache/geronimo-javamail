@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.Charset;
 
 public class NNTPNewsrcFile extends NNTPNewsrc {
     // source for the file data
@@ -50,7 +51,7 @@ public class NNTPNewsrcFile extends NNTPNewsrc {
      * @exception IOException
      */
     public BufferedReader getInputReader() throws IOException {
-        return new BufferedReader(new InputStreamReader(new FileInputStream(source)));
+        return new BufferedReader(new InputStreamReader(new FileInputStream(source), Charset.forName("ISO8859-1")));
     }
 
     /**
@@ -61,6 +62,6 @@ public class NNTPNewsrcFile extends NNTPNewsrc {
      */
     public Writer getOutputWriter() throws IOException {
         // open this for overwriting
-        return new OutputStreamWriter(new FileOutputStream(source, false));
+        return new OutputStreamWriter(new FileOutputStream(source, false), Charset.forName("ISO8859-1"));
     }
 }
