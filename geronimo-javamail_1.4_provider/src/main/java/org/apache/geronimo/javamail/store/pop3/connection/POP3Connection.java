@@ -307,7 +307,7 @@ public class POP3Connection extends MailConnection implements POP3Constants {
         // it's more efficient to do this a buffer at a time.
         // the MIMEInputReader takes care of the byte-stuffing and
         // ".\r\n" input terminator for us.
-        OutputStreamWriter outWriter = new OutputStreamWriter(out);
+        OutputStreamWriter outWriter = new OutputStreamWriter(out, Charset.forName("ISO8859-1"));
         char buffer[] = new char[500];
         try {
             int charsRead = -1;
