@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -141,7 +142,7 @@ public class NNTPConnection extends MailConnection {
         // set the encoding to ensure that an inappropriate native encoding is not picked up.
         Charset iso88591 = Charset.forName("ISO8859-1");
         reader = new BufferedReader(new InputStreamReader(inputStream, iso88591));
-        writer = new PrintWriter(new BufferedOutputStream(outputStream));
+        writer = new PrintWriter(new OutputStreamWriter(new BufferedOutputStream(outputStream), iso88591));
     }
 
 

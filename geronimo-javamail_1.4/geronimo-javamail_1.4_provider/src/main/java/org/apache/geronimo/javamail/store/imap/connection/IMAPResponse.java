@@ -16,6 +16,8 @@
  */
 
 package org.apache.geronimo.javamail.store.imap.connection;
+import java.io.UnsupportedEncodingException;
+
 import javax.mail.MessagingException;
 
 /**
@@ -60,6 +62,10 @@ public class IMAPResponse {
      * @return The string version of the response. 
      */
     public String toString() {
+        try {
+            return new String(response, "US-ASCII");
+        } catch (UnsupportedEncodingException e) {
+        }
         return new String(response);
     }
 }
