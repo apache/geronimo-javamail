@@ -19,7 +19,6 @@
 
 package org.apache.geronimo.javamail.authentication;
 
-import java.nio.charset.Charset;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

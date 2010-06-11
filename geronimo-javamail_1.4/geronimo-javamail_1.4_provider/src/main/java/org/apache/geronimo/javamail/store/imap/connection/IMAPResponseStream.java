@@ -20,7 +20,7 @@ package org.apache.geronimo.javamail.store.imap.connection;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -131,7 +131,11 @@ public class IMAPResponseStream {
             // response is in.  There are many different untagged formats, some general, some
             // specific to particular command types.
             if (token.getType() != Token.ATOM) {
-                throw new MessagingException("Unknown server response: " + new String(data, Charset.forName("ISO8859-1")));
+                try {
+                    throw new MessagingException("Unknown server response: " + new String(data, "ISO8859-1"));
+                } catch (UnsupportedEncodingException e) {
+                    throw new MessagingException("Unknown server response: " + new String(data));
+                }
             }
 
             String keyword = token.getValue();
@@ -213,7 +217,11 @@ public class IMAPResponseStream {
             // is 'OK'
             return new IMAPTaggedResponse(tag, status, tokenizer.getRemainder(), data);
         }
-        throw new MessagingException("Unknown server response: " + new String(data, Charset.forName("ISO8859-1")));
+        try {
+            throw new MessagingException("Unknown server response: " + new String(data, "ISO8859-1"));
+        } catch (UnsupportedEncodingException e) {
+            throw new MessagingException("Unknown server response: " + new String(data));
+        }
     }
 
     /**

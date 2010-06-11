@@ -22,7 +22,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -158,9 +157,11 @@ public class POP3Connection extends MailConnection implements POP3Constants {
         // The POp3 protocol is inherently a string-based protocol, so we get
         // string readers/writers for the connection streams.  Note that we explicitly
         // set the encoding to ensure that an inappropriate native encoding is not picked up.
-        Charset iso88591 = Charset.forName("ISO8859-1");
-        reader = new BufferedReader(new InputStreamReader(inputStream, iso88591));
-        writer = new PrintWriter(new OutputStreamWriter(new BufferedOutputStream(outputStream), iso88591));
+        try {
+            reader = new BufferedReader(new InputStreamReader(inputStream, "ISO8859-1"));
+            writer = new PrintWriter(new OutputStreamWriter(new BufferedOutputStream(outputStream), "ISO8859-1"));
+        } catch (UnsupportedEncodingException e) {
+        }
     }
 
     protected void getWelcome() throws IOException {
@@ -307,18 +308,20 @@ public class POP3Connection extends MailConnection implements POP3Constants {
         // it's more efficient to do this a buffer at a time.
         // the MIMEInputReader takes care of the byte-stuffing and
         // ".\r\n" input terminator for us.
-        OutputStreamWriter outWriter = new OutputStreamWriter(out, Charset.forName("ISO8859-1"));
-        char buffer[] = new char[500];
         try {
-            int charsRead = -1;
-            while ((charsRead = source.read(buffer)) >= 0) {
-                outWriter.write(buffer, 0, charsRead);
+            OutputStreamWriter outWriter = new OutputStreamWriter(out, "ISO8859-1");
+            char buffer[] = new char[500];
+            try {
+                int charsRead = -1;
+                while ((charsRead = source.read(buffer)) >= 0) {
+                    outWriter.write(buffer, 0, charsRead);
+                }
+                outWriter.flush();
+            } catch (IOException e) {
+                throw new MessagingException("Error processing a multi-line response", e);
             }
-            outWriter.flush();
-        } catch (IOException e) {
-            throw new MessagingException("Error processing a multi-line response", e);
+        } catch (UnsupportedEncodingException e) {
         }
-
         return out.toByteArray();
     }
 

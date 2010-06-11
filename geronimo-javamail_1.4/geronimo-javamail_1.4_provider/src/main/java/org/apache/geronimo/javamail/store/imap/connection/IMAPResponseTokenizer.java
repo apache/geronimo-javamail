@@ -19,7 +19,6 @@ package org.apache.geronimo.javamail.store.imap.connection;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -187,7 +186,11 @@ public class IMAPResponseTokenizer {
             return "";
         }
 
-        return new String(response, pos, response.length - pos, Charset.forName("ISO8859-1"));
+        try {
+            return new String(response, pos, response.length - pos, "ISO8859-1");
+        } catch (UnsupportedEncodingException e) {
+            return null; 
+        }
     }
 
 
@@ -236,14 +239,18 @@ public class IMAPResponseTokenizer {
             }
         }
 
-        // Numeric tokens we store as a different type.
-        String value = new String(response, start, pos - start, Charset.forName("ISO8859-1"));
         try {
-            int intValue = Integer.parseInt(value);
-            return new Token(Token.NUMERIC, value);
-        } catch (NumberFormatException e) {
+            // Numeric tokens we store as a different type.
+            String value = new String(response, start, pos - start, "ISO8859-1");
+            try {
+                int intValue = Integer.parseInt(value);
+                return new Token(Token.NUMERIC, value);
+            } catch (NumberFormatException e) {
+            }
+            return new Token(Token.ATOM, value);
+        } catch (UnsupportedEncodingException e) {
+            return null; 
         }
-        return new Token(Token.ATOM, value);
     }
 
     /**
@@ -376,9 +383,12 @@ public class IMAPResponseTokenizer {
      * @exception ResponseFormatException
      */
     private Token readQuotedString() throws MessagingException {
-
-        String value = new String(readQuotedStringData(), Charset.forName("ISO8859-1"));
-        return new Token(Token.QUOTEDSTRING, value);
+        try {
+            String value = new String(readQuotedStringData(), "ISO8859-1");
+            return new Token(Token.QUOTEDSTRING, value);
+        } catch (UnsupportedEncodingException e) {
+            return null; 
+        }
     }
 
     /**
@@ -429,8 +439,12 @@ public class IMAPResponseTokenizer {
      * @exception ResponseFormatException
      */
     protected Token readLiteral() throws MessagingException {
-        String value = new String(readLiteralData(), Charset.forName("ISO8859-1"));
-        return new Token(Token.LITERAL, value);
+        try {
+            String value = new String(readLiteralData(), "ISO8859-1");
+            return new Token(Token.LITERAL, value);
+        } catch (UnsupportedEncodingException e) {
+            return null; 
+        }
     }
 
 
@@ -481,7 +495,11 @@ public class IMAPResponseTokenizer {
      * @return A String extracted from the buffer.
      */
     protected String substring(int start, int end ) {
-        return new String(response, start, end - start, Charset.forName("ISO8859-1"));
+        try {
+            return new String(response, start, end - start, "ISO8859-1");
+        } catch (UnsupportedEncodingException e) {
+            return null; 
+        }
     }
 
 

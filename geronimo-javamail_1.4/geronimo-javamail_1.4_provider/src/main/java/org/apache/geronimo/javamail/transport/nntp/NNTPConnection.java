@@ -33,7 +33,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -140,9 +139,11 @@ public class NNTPConnection extends MailConnection {
         // The NNTP protocol is inherently a string-based protocol, so we get
         // string readers/writers for the connection streams.  Note that we explicitly
         // set the encoding to ensure that an inappropriate native encoding is not picked up.
-        Charset iso88591 = Charset.forName("ISO8859-1");
-        reader = new BufferedReader(new InputStreamReader(inputStream, iso88591));
-        writer = new PrintWriter(new OutputStreamWriter(new BufferedOutputStream(outputStream), iso88591));
+        try {
+            reader = new BufferedReader(new InputStreamReader(inputStream, "ISO8859-1"));
+            writer = new PrintWriter(new OutputStreamWriter(new BufferedOutputStream(outputStream), "ISO8859-1"));
+        } catch (UnsupportedEncodingException e) {
+        }
     }
 
 
