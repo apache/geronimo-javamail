@@ -35,7 +35,7 @@
     <name>Geronimo JavaMail 1.4</name>
     <packaging>pom</packaging>
 
-    <version>1.8.2-SNAPSHOT</version>
+    <version>1.9-SNAPSHOT</version>
 
     <description>
         Geronimmo JavaMail Bundle.
