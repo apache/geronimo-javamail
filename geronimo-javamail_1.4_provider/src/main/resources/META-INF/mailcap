@@ -21,8 +21,11 @@ text/plain;;    x-java-content-handler=org.apache.geronimo.javamail.handlers.Tex
 text/html;;     x-java-content-handler=org.apache.geronimo.javamail.handlers.TextHtmlHandler
 text/xml;;      x-java-content-handler=org.apache.geronimo.javamail.handlers.TextXmlHandler
 
-image/gif;;     x-java-content-handler=org.apache.geronimo.javamail.handlers.ImageGifHandler
-image/jpeg;;    x-java-content-handler=org.apache.geronimo.javamail.handlers.ImageJpegHandler
+## These are not implemented in the reference implementation because the required support                  
+## is not available on server JVMs. 
+## image/gif;;     x-java-content-handler=org.apache.geronimo.javamail.handlers.ImageGifHandler
+## image/jpeg;;    x-java-content-handler=org.apache.geronimo.javamail.handlers.ImageJpegHandler
+## image/jpg;;    x-java-content-handler=org.apache.geronimo.javamail.handlers.ImageJpegHandler
 
 multipart/*;;   x-java-content-handler=org.apache.geronimo.javamail.handlers.MultipartHandler
 message/rfc822;; x-java-content-handler=org.apache.geronimo.javamail.handlers.RFC822MessageHandler
