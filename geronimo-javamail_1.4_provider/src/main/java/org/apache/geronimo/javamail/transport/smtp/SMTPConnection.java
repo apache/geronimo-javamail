@@ -504,7 +504,7 @@ public class SMTPConnection extends MailConnection {
      * is in the right place and ready for getting the DATA message and the data
      * right place in the sequence
      */
-    protected void sendData(Message msg) throws MessagingException {
+    protected void sendData(MimeMessage msg) throws MessagingException {
 
         // send the DATA command
         SMTPReply line = sendCommand("DATA");
@@ -531,7 +531,7 @@ public class SMTPConnection extends MailConnection {
             // writer.
             MIMEOutputStream mimeOut = new MIMEOutputStream(outputStream);
 
-            msg.writeTo(mimeOut);
+            msg.writeTo(mimeOut, new String[] {"Bcc", "Content-Length"});
 
             // now to finish, we send a CRLF sequence, followed by a ".".
             mimeOut.writeSMTPTerminator();

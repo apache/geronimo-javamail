@@ -346,7 +346,7 @@ public class SMTPTransport extends Transport {
 
             try {
                 // try to send the data
-                connection.sendData(message);
+                connection.sendData((MimeMessage)message);
             } catch (MessagingException e) {
                 // If there's an error at this point, this is a complete
                 // delivery failure.
