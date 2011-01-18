@@ -272,7 +272,7 @@ public class DigestMD5Authenticator implements ClientAuthenticator {
             digest.update(authString.getBytes("US-ASCII"));
 
             // this gets added on to the client response
-            String responseString = clientResponse + new String(Hex.encode(digest.digest()), "US_ASCII");
+            String responseString = clientResponse + new String(Hex.encode(digest.digest()), "US-ASCII");
             // and this gets fed back into the digest
             digest.update(responseString.getBytes("US-ASCII"));
 

@@ -632,7 +632,7 @@ public class POP3Connection extends MailConnection implements POP3Constants {
                 byte[] challenge = response.decodeChallengeResponse();
 
                 try {
-                    String responseString = new String(Base64.encode(authenticator.evaluateChallenge(challenge)), "US_ASCII");
+                    String responseString = new String(Base64.encode(authenticator.evaluateChallenge(challenge)), "US-ASCII");
 
                     // have the authenticator evaluate and send back the encoded response.
                     response = sendCommand(responseString);
