@@ -70,7 +70,7 @@ public class AbstractImageHandler implements DataContentHandler {
             throw new UnsupportedDataTypeException("Unknown image type " + flavour.getMimeType());
         }
         ImageWriter writer = (ImageWriter) i.next();
-        writer.setOutput(os);
+        writer.setOutput(ImageIO.createImageOutputStream(os));
 
         if (obj instanceof RenderedImage) {
             writer.write((RenderedImage) obj);
