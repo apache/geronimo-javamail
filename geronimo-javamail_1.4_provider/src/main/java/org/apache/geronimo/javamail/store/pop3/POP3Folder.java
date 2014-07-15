@@ -79,7 +79,7 @@ public class POP3Folder extends Folder {
         super(store);
         this.fullName = name; 
         // if this is the input folder, this exists 
-        if (name.equalsIgnoreCase("INPUT")) {
+        if (name.equalsIgnoreCase("INBOX")) {
             exists = true; 
         }
         // by default, we're holding messages. 
