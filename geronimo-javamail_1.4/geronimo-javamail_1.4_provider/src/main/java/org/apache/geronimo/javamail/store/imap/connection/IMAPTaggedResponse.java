@@ -113,6 +113,12 @@ public class IMAPTaggedResponse extends IMAPResponse {
     {
         // we're passed back a challenge value, Base64 encoded.  Decode that portion of the 
         // response data. 
+    	
+    	//handle plain authentication gracefully, see GERONIMO-6526
+    	if(response.length <= 2){
+    		return null;
+    	}
+    	
         return Base64.decode(response, 2, response.length - 2);
     }
     

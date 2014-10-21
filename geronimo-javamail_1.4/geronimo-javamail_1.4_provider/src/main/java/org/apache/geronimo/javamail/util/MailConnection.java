@@ -715,7 +715,7 @@ public class MailConnection {
             return new LoginAuthenticator(username, password);
         }
         else if (mechs.contains(AUTHENTICATION_PLAIN)) {
-            return new PlainAuthenticator(username, password);
+            return new PlainAuthenticator(authid, username, password);
         }
         else {
             // can't find a mechanism we support in common

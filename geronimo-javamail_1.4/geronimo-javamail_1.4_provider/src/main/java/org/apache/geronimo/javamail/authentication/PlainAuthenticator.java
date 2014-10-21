@@ -23,7 +23,13 @@ import java.io.UnsupportedEncodingException;
 
 import javax.mail.MessagingException;
 
+//Implements RFC 4616 PLAIN SASL mechanism
+//See also RFC 3501, section 6.2.2"
+//an RFC 2595, section 6"
 public class PlainAuthenticator implements ClientAuthenticator {
+
+    // the sasl authzid we're authenticating
+    protected String authzid;
 
     // the user we're authenticating
     protected String username;
@@ -36,16 +42,31 @@ public class PlainAuthenticator implements ClientAuthenticator {
 
     /**
      * Main constructor.
-     * 
+     *
+     * @param authzid
+     *            SASL authenticationid (optional)
      * @param username
      *            The login user name.
      * @param password
      *            The login password.
      */
-    public PlainAuthenticator(String username, String password) {
+    public PlainAuthenticator(String authzid, String username, String password) {
+        this.authzid = authzid;
         this.username = username;
         this.password = password;
     }
+
+     /**
+      * Constructor without authzid
+      *
+      * @param username
+      *            The login user name.
+      * @param password
+      *            The login password.
+      */
+     public PlainAuthenticator(String username, String password) {
+         this(null, username, password);
+     }
 
     /**
      * Respond to the hasInitialResponse query. This mechanism does have an
@@ -77,32 +98,25 @@ public class PlainAuthenticator implements ClientAuthenticator {
 
     /**
      * Evaluate a PLAIN login challenge, returning the a result string that
-     * should satisfy the clallenge.
+     * should satisfy the challenge.
      * 
      * @param challenge
-     *            The decoded challenge data, as byte array.
+     *            For PLAIN Authentication there is no challenge (so this is unused)
      * 
-     * @return A formatted challege response, as an array of bytes.
+     * @return A formatted challenge response, as an array of bytes.
      * @exception MessagingException
      */
     public byte[] evaluateChallenge(byte[] challenge) throws MessagingException {
         try {
-            // get the username and password in an UTF-8 encoding to create the
-            // token
-            byte[] userBytes = username.getBytes("UTF-8");
-            byte[] passBytes = password.getBytes("UTF-8");
 
-            // our token has two copies of the username, one copy of the
-            // password, and nulls
-            // between
-            byte[] tokenBytes = new byte[(userBytes.length * 2) + passBytes.length + 2];
+            String result = "\0"+username+"\0"+password;
 
-            System.arraycopy(userBytes, 0, tokenBytes, 0, userBytes.length);
-            System.arraycopy(userBytes, 0, tokenBytes, userBytes.length + 1, userBytes.length);
-            System.arraycopy(passBytes, 0, tokenBytes, (userBytes.length * 2) + 2, passBytes.length);
+            if(authzid != null && authzid.length() > 0) {
+                result = authzid+result;
+            }
 
             complete = true;
-            return tokenBytes;
+            return result.getBytes("UTF-8");
 
         } catch (UnsupportedEncodingException e) {
             // got an error, fail this
