@@ -213,6 +213,10 @@ public class IMAPResponseStream {
             String tag = token.getValue();
             token = tokenizer.next();
             String status = token.getValue();
+            //handle plain authentication gracefully, see GERONIMO-6526
+            if("+".equals(tag) && status == null) {
+            	return new IMAPContinuationResponse(data);
+            }                      
             // primary information in one of these is the status field, which hopefully
             // is 'OK'
             return new IMAPTaggedResponse(tag, status, tokenizer.getRemainder(), data);

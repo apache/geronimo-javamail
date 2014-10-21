@@ -534,7 +534,7 @@ public class IMAPConnection extends MailConnection {
      */
     protected boolean processPlainAuthentication() throws MessagingException {
         // go process the login.
-        return processLogin(new PlainAuthenticator(username, password));
+        return processLogin(new PlainAuthenticator(authid, username, password));
     }
 
 
