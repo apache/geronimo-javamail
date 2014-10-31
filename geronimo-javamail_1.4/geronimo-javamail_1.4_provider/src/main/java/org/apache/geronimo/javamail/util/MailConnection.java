@@ -803,12 +803,6 @@ public class MailConnection {
     public String getLocalHost() throws MessagingException {
         if (localHost == null) {
 
-            try {
-                localHost = InetAddress.getLocalHost().getHostName();
-            } catch (UnknownHostException e) {
-                // fine, we're misconfigured - ignore
-            }
-
             if (localHost == null) {
                 localHost = props.getProperty(MAIL_LOCALHOST);
             }
@@ -816,6 +810,14 @@ public class MailConnection {
             if (localHost == null) {
                 localHost = props.getSessionProperty(MAIL_LOCALHOST);
             }
+
+            if (localHost == null) {
+        	try {
+            	    localHost = InetAddress.getLocalHost().getHostName();
+                } catch (UnknownHostException e) {
+	            // fine, we're misconfigured - ignore
+    	        }
+	    }
 
             if (localHost == null) {
                 throw new MessagingException("Can't get local hostname. "
