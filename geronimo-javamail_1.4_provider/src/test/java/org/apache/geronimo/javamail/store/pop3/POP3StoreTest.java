@@ -22,70 +22,67 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import javax.mail.Address;
+import javax.mail.FetchProfile;
+import javax.mail.Flags;
+import javax.mail.Flags.Flag;
 import javax.mail.Folder;
 import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.Transport;
+import javax.mail.UIDFolder;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
-import junit.framework.TestCase;
+import junit.framework.Assert;
 
-import com.icegreen.greenmail.util.GreenMail;
-import com.icegreen.greenmail.util.ServerSetupTest;
+import org.apache.geronimo.javamail.testserver.AbstractProtocolTest;
+import org.apache.geronimo.javamail.testserver.MailServer.DummySocketFactory;
 
-public class POP3StoreTest extends TestCase {
+public class POP3StoreTest extends AbstractProtocolTest {
+
     
-    private GreenMail greenMail;
-    private Message[] messages;
     
-    //@Override
-    protected void setUp() throws Exception {
-        // Setup GreenMail
-        greenMail = new GreenMail(ServerSetupTest.SMTP_POP3);       
-        greenMail.start();
-        greenMail.setUser("test@localhost", "test", "test");
+    
+    public void testSendRetrieve() throws Exception {
+        
+        start();
+        
         // Setup JavaMail session
         Properties props = new Properties();
-        props.setProperty("mail.smtp.port", String.valueOf(greenMail.getSmtp().getPort()));
-        props.setProperty("mail.pop3.port", String.valueOf(greenMail.getPop3().getPort()));
-        
-        System.out.println("stmp.port: " + greenMail.getSmtp().getPort());
-        System.out.println("pop3 port: " + greenMail.getPop3().getPort());
-        
+        props.setProperty("mail.smtp.port", String.valueOf(smtpConf.getListenerPort()));
+        props.setProperty("mail.debug","true");
         Session session = Session.getInstance(props);
-        // Send messages for the current test to GreenMail
+        // Send messages for the current test to James
         sendMessage(session, "/messages/multipart.msg");
         sendMessage(session, "/messages/simple.msg");
+        server.ensureMsgCount(2);
         
-        // Load the message from POP3
-        Store store = session.getStore("pop3");
-        store.connect("localhost", "test", "test");
-        Folder folder = store.getFolder("INBOX");
-        folder.open(Folder.READ_ONLY);
-        this.messages = folder.getMessages();
-        assertEquals(2, messages.length);
-    }
-    
-    //@Override
-    protected void tearDown() throws Exception {
-        greenMail.stop();
-    }
+        props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3");
+        props.setProperty("mail.pop3.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
 
-    private void sendMessage(Session session, String msgFile) throws Exception {
-        MimeMessage message;
-        InputStream in = POP3StoreTest.class.getResourceAsStream(msgFile);
-        try {
-            message = new MimeMessage(session, in);
-        } finally {
-            in.close();
-        }
-        Transport.send(message, new Address[] { new InternetAddress("test@localhost") });
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        store.connect("127.0.0.1", "serveruser", "serverpass");
+        Folder f = store.getFolder("INBOX");
+        f.open(Folder.READ_ONLY); //TODO STAT only when folder open???
+        Assert.assertEquals(2, f.getMessageCount());
+        Message[] messages = new Message[2];
+        messages[0] = f.getMessage(1);
+        messages[1] = f.getMessage(2);
+        checkMessages(messages);
+        f.close(false);
+        store.close();
     }
     
-    public void testMessages() throws Exception {
+
+    
+    
+    private void checkMessages(Message[] messages) throws Exception {
         MimeMessage msg1 = (MimeMessage)messages[0];
         Object content = msg1.getContent();
         assertTrue(content instanceof MimeMultipart);
@@ -113,4 +110,340 @@ public class POP3StoreTest extends TestCase {
         
         assertEquals(input.getContentType().toLowerCase(), output.getContentType().toLowerCase());        
     }
+    
+
+    public void testStartTLS() throws Exception {
+
+        pop3Conf.enableSSL(true, false);
+
+        start();
+
+        sendTestMsgs();
+        
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3");
+        props.setProperty("mail.pop3.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+        props.setProperty("mail.pop3.starttls.required", "true");
+        props.setProperty("mail.pop3.ssl.trust", "*");
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        store.connect("127.0.0.1", "serveruser", "serverpass");
+        Folder f = store.getFolder("INBOX");
+        f.open(Folder.READ_ONLY); //TODO STAT only when folder open???
+        Assert.assertEquals(2, f.getMessageCount());
+        f.close(false);
+        store.close();
+
+    }
+
+    public void testAPOP() throws Exception {
+
+        pop3Conf.enableSSL(true, false);
+
+        start();
+        sendTestMsgs();
+        
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3");
+        props.setProperty("mail.pop3.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+        props.setProperty("mail.pop3.apop.enable", "true");
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        store.connect("127.0.0.1", "serveruser", "serverpass");
+        Folder f = store.getFolder("INBOX");
+        f.open(Folder.READ_ONLY); //TODO STAT only when folder open???
+        Assert.assertEquals(2, f.getMessageCount());
+        f.close(false);
+        store.close();
+
+    }
+
+    public void testFetch() throws Exception {
+
+        
+        pop3Conf.enableSSL(true, false);
+
+        start();
+        sendTestMsgs();
+        
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3");
+        props.setProperty("mail.pop3.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        store.connect("127.0.0.1", "serveruser", "serverpass");
+        Folder f = store.getFolder("INBOX");
+        f.open(Folder.READ_ONLY); //TODO STAT only when folder open???
+        FetchProfile fp = new FetchProfile();
+        fp.add(UIDFolder.FetchProfileItem.UID);
+        fp.add(FetchProfile.Item.CONTENT_INFO);
+        
+        Message[] msgs = f.getMessages();
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        Assert.assertEquals(2, msgs.length);
+        
+        f.fetch(msgs, fp);
+        Assert.assertEquals(2, f.getMessageCount());
+        
+        for (int i = 0; i < msgs.length; i++) {
+            Message message = msgs[i];
+            message.writeTo(bout);
+            String msg = bout.toString();
+            Assert.assertNotNull(msg);
+            int num = message.getMessageNumber();
+            Assert.assertTrue(num > 0);
+            String uid = ((POP3Folder) f).getUID(message);
+            Assert.assertNotNull(uid);
+            Assert.assertTrue(!uid.isEmpty());
+        }
+        
+        f.close(false);
+        store.close();
+
+    }
+    
+    
+    
+    public void testDelete() throws Exception {
+
+        
+        pop3Conf.enableSSL(true, false);
+
+        start();
+        sendTestMsgs();
+        
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3");
+        props.setProperty("mail.pop3.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        store.connect("127.0.0.1", "serveruser", "serverpass");
+        Folder f = store.getFolder("INBOX");
+        f.open(Folder.READ_WRITE); //TODO STAT only when folder open???
+        Assert.assertEquals(2, f.getMessageCount());
+        Message[] msgs =  f.getMessages();
+        f.setFlags(msgs, new Flags(Flag.DELETED), true);
+        Assert.assertEquals(2, f.getMessageCount());
+        f.getMessage(1).getSubject(); //should fail
+        //Assert.assertEquals(2, f.expunge());
+        f.close(false);
+        f.open(Folder.READ_ONLY); //TODO STAT only when folder open???
+        Assert.assertEquals(0, f.getMessageCount());
+        store.close();
+
+    }
+    
+    
+    
+    public void testStartTLSFail() throws Exception {
+
+        
+        pop3Conf.enableSSL(false, false);
+
+        start();
+        sendTestMsgs();
+        
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3");
+        props.setProperty("mail.pop3.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+        props.setProperty("mail.pop3.starttls.required", "true");
+        props.setProperty("mail.pop3.ssl.trust", "*");
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        try {
+            store.connect("127.0.0.1", "serveruser", "serverpass");
+            fail();
+        } catch (MessagingException e) {
+            //Expected
+        }
+    }
+
+    public void testSSLEnable() throws Exception {
+
+        
+        pop3Conf.enableSSL(false, true);
+
+        start();
+        sendTestMsgs();
+
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3");
+        props.setProperty("mail.pop3.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+        props.setProperty("mail.pop3.ssl.enable", "true");
+        props.setProperty("mail.pop3.ssl.trust", "*");
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        store.connect("127.0.0.1", "serveruser", "serverpass");
+        Folder f = store.getFolder("INBOX");
+        f.open(Folder.READ_ONLY); //TODO STAT only when folder open???
+        Assert.assertEquals(2, f.getMessageCount());
+        f.close(false);
+        store.close();
+
+    }
+
+    public void testSSLPop3s() throws Exception {
+
+        
+        pop3Conf.enableSSL(false, true);
+
+        start();
+        sendTestMsgs();
+
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3s");
+        props.setProperty("mail.pop3s.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+        props.setProperty("mail.pop3s.ssl.trust", "*");
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        store.connect("127.0.0.1", "serveruser", "serverpass");
+        Folder f = store.getFolder("INBOX");
+        f.open(Folder.READ_ONLY); //TODO STAT only when folder open???
+        Assert.assertEquals(2, f.getMessageCount());
+        f.close(false);
+        store.close();
+
+    }
+    
+    public void testSSLPop3sFactoryClass() throws Exception {
+
+        
+        pop3Conf.enableSSL(false, true);
+
+        start();
+        sendTestMsgs();
+
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3s");
+        props.setProperty("mail.pop3s.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+        props.setProperty("mail.pop3s.ssl.trust", "*");
+        props.setProperty("mail.pop3s.ssl.socketFactory.class", DummySocketFactory.class.getName());
+       
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        try {
+            store.connect("127.0.0.1", "serveruser", "serverpass");
+            fail();
+        } catch (MessagingException e) {
+            Assert.assertEquals("dummy socket factory", e.getCause().getCause().getMessage());
+            
+            //Expected
+        }
+
+        
+        
+    }
+
+    public void testSSLPop3sFactoryInstance() throws Exception {
+
+        
+        pop3Conf.enableSSL(false, true);
+
+        start();
+        sendTestMsgs();
+
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3s");
+        props.setProperty("mail.pop3s.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+        props.setProperty("mail.pop3s.ssl.trust", "*");
+        props.put("mail.pop3s.ssl.socketFactory", new DummySocketFactory());
+       
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        try {
+            store.connect("127.0.0.1", "serveruser", "serverpass");
+            fail();
+        } catch (MessagingException e) {
+            Assert.assertEquals("dummy socket factory", e.getCause().getMessage());
+            
+            //Expected
+        }
+
+    }
+    
+    public void testSSLPop3sNotEnabled() throws Exception {
+
+        
+        pop3Conf.enableSSL(false, false);
+
+        start();
+        sendTestMsgs();
+
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3s");
+        props.setProperty("mail.pop3s.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+        props.setProperty("mail.pop3s.ssl.trust", "*");
+        props.setProperty("mail.pop3s.ssl.enable", "false");
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        store.connect("127.0.0.1", "serveruser", "serverpass");
+        Folder f = store.getFolder("INBOX");
+        f.open(Folder.READ_ONLY); //TODO STAT only when folder open???
+        Assert.assertEquals(2, f.getMessageCount());
+        f.close(false);
+        store.close();
+
+    }
+    
+    public void testPop3GetMsgs() throws Exception {
+
+        
+        pop3Conf.enableSSL(false, false);
+
+        start();
+        sendTestMsgs();
+
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "pop3");
+        props.setProperty("mail.pop3.port", String.valueOf(pop3Conf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
+
+        Session jmsession = Session.getInstance(props);
+        Store store = jmsession.getStore();
+        store.connect("127.0.0.1", "serveruser", "serverpass");
+        Folder f = store.getFolder("INBOX");
+        f.open(Folder.READ_ONLY); //TODO STAT only when folder open???
+        
+        
+        Message[] msgs =  f.getMessages();
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        Assert.assertEquals(2, msgs.length);
+        
+        for (int i = 0; i < msgs.length; i++) {
+            Message message = msgs[i];
+            message.writeTo(bout);
+            String msg = bout.toString();
+            Assert.assertNotNull(msg);
+            int num = message.getMessageNumber();
+            Assert.assertTrue(num > 0);
+            String uid = ((POP3Folder) f).getUID(message);
+            Assert.assertNotNull(uid);
+            Assert.assertTrue(!uid.isEmpty());
+        }
+        
+        f.close(false);
+        store.close();
+
+    }
+
 }
