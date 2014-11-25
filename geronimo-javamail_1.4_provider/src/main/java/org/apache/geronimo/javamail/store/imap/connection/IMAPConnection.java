@@ -141,30 +141,43 @@ public class IMAPConnection extends MailConnection {
 
             // make sure we process these now
             processPendingResponses();
+            
+            boolean requireTLS = props.getBooleanProperty(MAIL_STARTTLS_REQUIRED, false);
+            boolean enableTLS = props.getBooleanProperty(MAIL_STARTTLS_ENABLE, false);
+            boolean serverSupportsTLS = hasCapability(CAPABILITY_STARTTLS);
 
-            // if we're not already using an SSL connection, and we have permission to issue STARTTLS, AND
-            // the server supports this, then switch to TLS mode before continuing.
-            if (!sslConnection && props.getBooleanProperty(MAIL_STARTTLS_ENABLE, false) && hasCapability(CAPABILITY_STARTTLS)) {
-                // if the server supports TLS, then use it for the connection.
-                // on our connection.
-
-                // tell the server of our intention to start a TLS session
-                sendSimpleCommand("STARTTLS");
-
-                // The connection is then handled by the superclass level.
-                getConnectedTLSSocket();
-
-                // create the special reader for pulling the responses.
-                reader = new IMAPResponseStream(inputStream);
-
-                // the IMAP spec states that the capability response is independent of login state or
-                // user, but I'm not sure I believe that to be the case.  It doesn't hurt to refresh
-                // the information again after establishing a secure connection.
-                getCapability();
-                // and we need to repeat this check.
-                if (extractResponse("PREAUTH") != null) {
-                    preAuthorized = true;
+            // if we're not already using an SSL connection, and we have permission to issue STARTTLS or its even required
+            // try to setup a SSL connection
+            if (!sslConnection && (enableTLS || requireTLS)) {
+                
+                //if the server does not support TLS check if its required.
+                //If true then throw an error, if not establish a non SSL connection
+                if(requireTLS && !serverSupportsTLS) {
+                    throw new MessagingException("Server doesn't support required transport level security");
+                } else if (serverSupportsTLS){
+                    // tell the server of our intention to start a TLS session
+                    sendSimpleCommand("STARTTLS");
+    
+                    // The connection is then handled by the superclass level.
+                    getConnectedTLSSocket();
+    
+                    // create the special reader for pulling the responses.
+                    reader = new IMAPResponseStream(inputStream);
+    
+                    // the IMAP spec states that the capability response is independent of login state or
+                    // user, but I'm not sure I believe that to be the case.  It doesn't hurt to refresh
+                    // the information again after establishing a secure connection.
+                    getCapability();
+                    // and we need to repeat this check.
+                    if (extractResponse("PREAUTH") != null) {
+                        preAuthorized = true;
+                    }
+                } else {
+                    if (debug) {
+                        debugOut("STARTTLS is enabled but not required and server does not support it. So we establish a connection without transport level security");
+                    }
                 }
+                
             }
 
             // damn, no login required.
