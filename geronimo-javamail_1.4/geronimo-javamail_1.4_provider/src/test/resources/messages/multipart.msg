@@ -1,6 +1,6 @@
 Date: Sat, 11 Oct 2008 00:48:01 +0200 (CEST)
-From: test@localhost
-To: test@localhost
+From: from@localhost
+To: serveruser@localhost
 Message-ID: urn:uuid:219365EB848AD9CACB1223678880948
 Subject: Test
 MIME-Version: 1.0

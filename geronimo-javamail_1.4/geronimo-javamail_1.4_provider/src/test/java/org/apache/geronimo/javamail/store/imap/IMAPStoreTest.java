@@ -18,74 +18,45 @@ package org.apache.geronimo.javamail.store.imap;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.util.Properties;
 
-import javax.mail.Address;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.Session;
 import javax.mail.Store;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
-import junit.framework.TestCase;
+import org.apache.geronimo.javamail.testserver.AbstractProtocolTest;
 
-import com.icegreen.greenmail.util.GreenMail;
-import com.icegreen.greenmail.util.ServerSetupTest;
 
-public class IMAPStoreTest extends TestCase {
+public class IMAPStoreTest extends AbstractProtocolTest {
     
-    private GreenMail greenMail;
-    private Message[] messages;
-    
-    //@Override
-    protected void setUp() throws Exception {
-        // Setup GreenMail
-        greenMail = new GreenMail(ServerSetupTest.SMTP_IMAP);
-        greenMail.start();
-        greenMail.setUser("test@localhost", "test", "test");
-        // Setup JavaMail session
+    public void testSimple() throws Exception {
+       
+        start();
+        sendTestMsgs();
+        
         Properties props = new Properties();
-        props.setProperty("mail.smtp.port", String.valueOf(greenMail.getSmtp().getPort()));
-        props.setProperty("mail.imap.port", String.valueOf(greenMail.getImap().getPort()));
-        
-        System.out.println("stmp.port: " + greenMail.getSmtp().getPort());
-        System.out.println("imap port: " + greenMail.getImap().getPort());
-        
+        props.setProperty("mail.imap.port", String.valueOf(imapConf.getListenerPort()));
+        props.setProperty("mail.debug", "true");
         Session session = Session.getInstance(props);
-        // Send messages for the current test to GreenMail
-        sendMessage(session, "/messages/multipart.msg");
-        sendMessage(session, "/messages/simple.msg");
         
         // Load the message from IMAP
         Store store = session.getStore("imap");
-        store.connect("localhost", "test", "test");
+        store.connect("127.0.0.1", "serveruser", "serverpass");
         Folder folder = store.getFolder("INBOX");
         folder.open(Folder.READ_ONLY);
-        this.messages = folder.getMessages();
-        assertEquals(2, messages.length);
+        Message[] messages = new Message[2];
+        messages[0] = folder.getMessage(1);
+        messages[1] = folder.getMessage(2);
+        checkMessages(messages);
+        folder.close(false);
+        store.close();
     }
     
-    //@Override
-    protected void tearDown() throws Exception {
-        greenMail.stop();
-    }
-
-    private void sendMessage(Session session, String msgFile) throws Exception {
-        MimeMessage message;
-        InputStream in = IMAPStoreTest.class.getResourceAsStream(msgFile);
-        try {
-            message = new MimeMessage(session, in);
-        } finally {
-            in.close();
-        }
-        Transport.send(message, new Address[] { new InternetAddress("test@localhost") });
-    }
     
-    public void testMessages() throws Exception {
+    private void checkMessages(Message[] messages) throws Exception {
         MimeMessage msg1 = (MimeMessage)messages[0];
         Object content = msg1.getContent();
         assertTrue(content instanceof MimeMultipart);
@@ -113,4 +84,6 @@ public class IMAPStoreTest extends TestCase {
         
         assertEquals(input.getContentType().toLowerCase(), output.getContentType().toLowerCase());        
     }
+    
+ 
 }
