@@ -37,6 +37,7 @@ import javax.mail.internet.InternetHeaders;
 
 import org.apache.geronimo.javamail.authentication.AuthenticatorFactory;
 import org.apache.geronimo.javamail.authentication.ClientAuthenticator;
+import org.apache.geronimo.javamail.store.imap.connection.IMAPResponseStream;
 import org.apache.geronimo.javamail.store.pop3.POP3Constants;
 import org.apache.geronimo.javamail.util.CommandFailedException;
 import org.apache.geronimo.javamail.util.InvalidCommandException;
@@ -57,7 +58,7 @@ public class POP3Connection extends MailConnection implements POP3Constants {
     static final protected String MAIL_AUTH_ENABLED = "auth.enable";
     static final protected String MAIL_RESET_QUIT = "rsetbeforequit";
     static final protected String MAIL_DISABLE_TOP = "disabletop";
-    static final protected String MAIL_FORGET_TOP = "forgettopheaders";
+    //static final protected String MAIL_FORGET_TOP = "forgettopheaders"; //TODO forgettopheaders
 
     // the initial greeting string, which might be required for APOP authentication.
     protected String greeting;
@@ -71,27 +72,22 @@ public class POP3Connection extends MailConnection implements POP3Constants {
     protected PrintWriter writer;
     // this connection was closed unexpectedly
     protected boolean closed;
-    // indicates whether this conneciton is currently logged in.  Once
+    // indicates whether this connection is currently logged in.  Once
     // we send a QUIT, we're finished.
     protected boolean loggedIn;
     // indicates whether we need to avoid using the TOP command
     // when retrieving headers
     protected boolean topDisabled = false;
+    // is TLS enabled on our part?
+    protected boolean useTLS = false;
+    // is TLS required on our part?
+    protected boolean requireTLS = false;
 
     /**
      * Normal constructor for an POP3Connection() object.
      *
-     * @param store    The store we're associated with (source of parameter values).
-     * @param host     The target host name of the IMAP server.
-     * @param port     The target listening port of the server.  Defaults to 119 if
-     *                 the port is specified as -1.
-     * @param username The login user name (can be null unless authentication is
-     *                 required).
-     * @param password Password associated with the userid account.  Can be null if
-     *                 authentication is not required.
-     * @param sslConnection
-     *                 True if this is targetted as an SSLConnection.
-     * @param debug    The session debug flag.
+     * @param props  The protocol properties abstraction containing our
+     *               property modifiers.
      */
     public POP3Connection(ProtocolProperties props) {
         super(props);
@@ -100,6 +96,11 @@ public class POP3Connection extends MailConnection implements POP3Constants {
         authEnabled = props.getBooleanProperty(MAIL_AUTH_ENABLED, false);
         apopEnabled = props.getBooleanProperty(MAIL_APOP_ENABLED, false);
         topDisabled = props.getBooleanProperty(MAIL_DISABLE_TOP, false);
+        // and also check for TLS enablement.
+        useTLS = props.getBooleanProperty(MAIL_STARTTLS_ENABLE, false);
+        // and also check if TLS is required.
+        requireTLS = props.getBooleanProperty(MAIL_STARTTLS_REQUIRED, false);
+       
     }
 
 
@@ -121,7 +122,35 @@ public class POP3Connection extends MailConnection implements POP3Constants {
             getConnection();
             // consume the welcome line
             getWelcome();
-
+            
+            // if we're not already using an SSL connection, and we have permission to issue STARTTLS or its even required
+            // try to setup a SSL connection
+            if (!sslConnection && (useTLS || requireTLS)) {
+                
+                    // tell the server of our intention to start a TLS session
+                    POP3Response starttlsResponse = null;
+                    try {
+                        starttlsResponse = sendCommand("STLS");
+                    } catch (CommandFailedException e) {
+                       
+                    }
+                    
+                    //if the server does not support TLS check if its required.
+                    //If true then throw an error, if not establish a non SSL connection
+                    if(requireTLS && (starttlsResponse == null || starttlsResponse.isError())) {
+                        throw new MessagingException("Server doesn't support required transport level security");
+                    } else if(starttlsResponse != null && starttlsResponse.getStatus() == POP3Response.OK) {
+                     // The connection is then handled by the superclass level.
+                        getConnectedTLSSocket();
+                    } else {
+                        if (debug) {
+                            debugOut("STARTTLS is enabled but not required and server does not support it. So we establish a connection without transport level security");
+                        }
+                    }
+            }
+            
+            getConnection();
+            
             // go login with the server
             if (login())
             {
@@ -154,7 +183,7 @@ public class POP3Connection extends MailConnection implements POP3Constants {
             throw new MessagingException("Unable to obtain a connection to the POP3 server", e);
         }
 
-        // The POp3 protocol is inherently a string-based protocol, so we get
+        // The POP3 protocol is inherently a string-based protocol, so we get
         // string readers/writers for the connection streams.  Note that we explicitly
         // set the encoding to ensure that an inappropriate native encoding is not picked up.
         try {
@@ -210,7 +239,7 @@ public class POP3Connection extends MailConnection implements POP3Constants {
     }
 
     /**
-     * Test if the connnection has been forcibly closed.
+     * Test if the connection has been forcibly closed.
      *
      * @return True if the server disconnected the connection.
      */
@@ -259,7 +288,7 @@ public class POP3Connection extends MailConnection implements POP3Constants {
         byte[] data = null;
 
         String line;
-        MIMEInputReader source = new MIMEInputReader(reader);
+        //MIMEInputReader source = new MIMEInputReader(reader); //TODO unused
 
         try {
             line = reader.readLine();
@@ -570,7 +599,7 @@ public class POP3Connection extends MailConnection implements POP3Constants {
             throw new MessagingException("Unable to create MD5 digest", e);
         }
         // this will throw an exception if it gives an error failure
-        sendCommand("APOP " + username + " " + Hex.encode(digest));
+        sendCommand("APOP " + username + " " + new String(Hex.encode(digest)));
         // no exception, we must have passed
         return true;
     }

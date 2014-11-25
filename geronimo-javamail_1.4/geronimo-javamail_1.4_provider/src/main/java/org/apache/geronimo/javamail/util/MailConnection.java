@@ -17,32 +17,43 @@
 
 package org.apache.geronimo.javamail.util;
 
-import java.io.IOException; 
-import java.io.InputStream; 
-import java.io.OutputStream; 
-import java.io.PrintStream; 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
-import java.net.Socket; 
+import java.net.Socket;
 import java.net.UnknownHostException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer; 
+import java.util.StringTokenizer;
 
 import javax.mail.MessagingException;
 import javax.mail.Session;
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
-import org.apache.geronimo.javamail.authentication.ClientAuthenticator; 
-import org.apache.geronimo.javamail.authentication.CramMD5Authenticator; 
-import org.apache.geronimo.javamail.authentication.DigestMD5Authenticator; 
-import org.apache.geronimo.javamail.authentication.LoginAuthenticator; 
-import org.apache.geronimo.javamail.authentication.PlainAuthenticator; 
-import org.apache.geronimo.javamail.authentication.SASLAuthenticator; 
-import org.apache.geronimo.javamail.util.CommandFailedException;      
-import org.apache.geronimo.javamail.util.InvalidCommandException;      
+import org.apache.geronimo.javamail.authentication.ClientAuthenticator;
+import org.apache.geronimo.javamail.authentication.CramMD5Authenticator;
+import org.apache.geronimo.javamail.authentication.DigestMD5Authenticator;
+import org.apache.geronimo.javamail.authentication.LoginAuthenticator;
+import org.apache.geronimo.javamail.authentication.PlainAuthenticator;
+import org.apache.geronimo.javamail.authentication.SASLAuthenticator;
 
 /**
  * Base class for all mail Store/Transport connection.  Centralizes management
@@ -59,10 +70,10 @@ public class MailConnection {
     /**
      * property keys for protocol properties.
      */
-    protected static final String MAIL_AUTH = "auth";
     protected static final String MAIL_PORT = "port";
     protected static final String MAIL_LOCALHOST = "localhost";
     protected static final String MAIL_STARTTLS_ENABLE = "starttls.enable";
+    protected static final String MAIL_STARTTLS_REQUIRED = "starttls.required";
     protected static final String MAIL_SSL_ENABLE = "ssl.enable";
     protected static final String MAIL_TIMEOUT = "timeout";
     protected static final String MAIL_SASL_ENABLE = "sasl.enable";
@@ -71,11 +82,19 @@ public class MailConnection {
     protected static final String MAIL_SASL_MECHANISMS = "sasl.mechanisms";
     protected static final String MAIL_PLAIN_DISABLE = "auth.plain.disable";
     protected static final String MAIL_LOGIN_DISABLE = "auth.login.disable";
+    
+    protected static final String MAIL_FACTORY = "socketFactory"; //GERONIMO-5429
     protected static final String MAIL_FACTORY_CLASS = "socketFactory.class";
     protected static final String MAIL_FACTORY_FALLBACK = "socketFactory.fallback";
     protected static final String MAIL_FACTORY_PORT = "socketFactory.port";
+
+    protected static final String MAIL_SSL_FACTORY = "ssl.socketFactory"; //GERONIMO-5429
+    protected static final String MAIL_SSL_FACTORY_CLASS = "ssl.socketFactory.class";
+    protected static final String MAIL_SSL_FACTORY_PORT = "ssl.socketFactory.port";
     protected static final String MAIL_SSL_PROTOCOLS = "ssl.protocols";
     protected static final String MAIL_SSL_CIPHERSUITES = "ssl.ciphersuites";
+    protected static final String MAIL_SSL_TRUST = "ssl.trust";
+
     protected static final String MAIL_LOCALADDRESS = "localaddress";
     protected static final String MAIL_LOCALPORT = "localport";
     protected static final String MAIL_ENCODE_TRACE = "encodetrace";
@@ -167,6 +186,11 @@ public class MailConnection {
         // initialize our debug settings from the session 
         debug = session.getDebug(); 
         debugStream = session.getDebugOut();
+        
+        String mailSSLEnable = props.getProperty(MAIL_SSL_ENABLE);
+        if(mailSSLEnable != null) {
+            this.sslConnection = Boolean.valueOf(mailSSLEnable);
+        }
     }
     
     
@@ -200,7 +224,7 @@ public class MailConnection {
             }
         }
     	
-    	// Before we do anything, let's make sure that we succesfully received a host
+    	// Before we do anything, let's make sure that we successfully received a host
     	if ( host == null ) {
     		host = DEFAULT_MAIL_HOST;
     	}
@@ -292,62 +316,84 @@ public class MailConnection {
     protected void getConnectedSocket() throws IOException {
         debugOut("Attempting plain socket connection to server " + serverHost + ":" + serverPort);
 
-        // check the properties that control how we connect. 
-        getConnectionProperties(); 
-
-        // the socket factory can be specified via a session property.  By default, we just directly
-        // instantiate a socket without using a factory.
-        String socketFactory = props.getProperty(MAIL_FACTORY_CLASS);
-
-        // make sure the socket is nulled out to start 
+        // make sure this is null 
         socket = null;
-
-        // if there is no socket factory defined (normal), we just create a socket directly.
-        if (socketFactory == null) {
-            socket = new Socket(serverHost, serverPort, localAddress, localPort);
+        
+        createSocket(false);
+        
+        // if we have a timeout value, set that before returning 
+        if (timeout >= 0) {
+            socket.setSoTimeout(timeout);
         }
+    }
+    
+    private boolean createSocketFromFactory(boolean ssl, boolean layer) throws IOException {
+        
+        String socketFactoryClass = props.getProperty(ssl?MAIL_SSL_FACTORY_CLASS:MAIL_FACTORY_CLASS);
+        
+        if(socketFactoryClass == null) {
+            return false;
+        }
+        
+        // we'll try this with potentially two different factories if we're allowed to fall back.
+        boolean fallback = props.getBooleanProperty(MAIL_FACTORY_FALLBACK, false);
+        int socketFactoryPort = props.getIntProperty(ssl?MAIL_SSL_FACTORY_PORT:MAIL_FACTORY_PORT, -1);
+        Integer portArg = new Integer(socketFactoryPort == -1 ? serverPort : socketFactoryPort);
+        
+        debugOut("Creating "+(ssl?"":"non-")+"SSL socket using factory " + socketFactoryClass+ " listening on port "+portArg);
 
-        else {
+        while (true) {
             try {
-                int socketFactoryPort = props.getIntProperty(MAIL_FACTORY_PORT, -1);
-
-                // we choose the port used by the socket based on overrides.
-                Integer portArg = new Integer(socketFactoryPort == -1 ? serverPort : socketFactoryPort);
-
+                
                 // use the current context loader to resolve this.
                 ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                Class factoryClass = loader.loadClass(socketFactory);
+                Class factoryClass = loader.loadClass(socketFactoryClass);
 
                 // done indirectly, we need to invoke the method using reflection.
                 // This retrieves a factory instance.
-                Method getDefault = factoryClass.getMethod("getDefault", new Class[0]);
-                Object defFactory = getDefault.invoke(new Object(), new Object[0]);
-
+                //Method getDefault = factoryClass.getMethod("getDefault", new Class[0]); //TODO check instantiation of socket factory
+                Object defFactory = factoryClass.newInstance();// getDefault.invoke(new Object(), new Object[0]);
                 // now that we have the factory, there are two different createSocket() calls we use,
                 // depending on whether we have a localAddress override.
 
-                if (localAddress != null) {
+                if (localAddress != null && !layer) {
                     // retrieve the createSocket(String, int, InetAddress, int) method.
                     Class[] createSocketSig = new Class[] { String.class, Integer.TYPE, InetAddress.class, Integer.TYPE };
                     Method createSocket = factoryClass.getMethod("createSocket", createSocketSig);
 
                     Object[] createSocketArgs = new Object[] { serverHost, portArg, localAddress, new Integer(localPort) };
                     socket = (Socket)createSocket.invoke(defFactory, createSocketArgs);
+                    break; 
                 }
                 else {
-                    // retrieve the createSocket(String, int) method.
-                    Class[] createSocketSig = new Class[] { String.class, Integer.TYPE };
-                    Method createSocket = factoryClass.getMethod("createSocket", createSocketSig);
+                    if(layer) {
+                     // retrieve the createSocket(String, int) method.
+                        Class[] createSocketSig = new Class[] { Socket.class, String.class, Integer.TYPE, Boolean.TYPE };
+                        Method createSocket = factoryClass.getMethod("createSocket", createSocketSig);
 
-                    Object[] createSocketArgs = new Object[] { serverHost, portArg };
-                    socket = (Socket)createSocket.invoke(defFactory, createSocketArgs);
+                        Object[] createSocketArgs = new Object[] { socket, serverHost, new Integer(serverPort), Boolean.TRUE };
+                        socket = (Socket)createSocket.invoke(defFactory, createSocketArgs);
+                        break; 
+                    } else {
+                     // retrieve the createSocket(String, int) method.
+                        Class[] createSocketSig = new Class[] { String.class, Integer.TYPE };
+                        Method createSocket = factoryClass.getMethod("createSocket", createSocketSig);
+
+                        Object[] createSocketArgs = new Object[] { serverHost, portArg };
+                        socket = (Socket)createSocket.invoke(defFactory, createSocketArgs);
+                        break; 
+                    }
+                    
+                    
                 }
             } catch (Throwable e) {
-                // if a socket factor is specified, then we may need to fall back to a default.  This behavior
-                // is controlled by (surprise) more session properties.
-                if (props.getBooleanProperty(MAIL_FACTORY_FALLBACK, false)) {
-                    debugOut("First plain socket attempt failed, falling back to default factory", e);
-                    socket = new Socket(serverHost, serverPort, localAddress, localPort);
+                // if we're allowed to fallback, then use the default factory and try this again.  We only
+                // allow this to happen once.
+                if (fallback) {
+                    debugOut("First attempt at creating "+(ssl?"":"non-")+"SSL socket failed, falling back to default factory");
+                    socketFactoryClass = ssl?"javax.net.ssl.SSLSocketFactory":"javax.net.SocketFactory";
+                    fallback = false;
+                    continue;
                 }
                 // we have an exception.  We're going to throw an IOException, which may require unwrapping
                 // or rewrapping the exception.
@@ -357,8 +403,7 @@ public class MailConnection {
                         e = ((InvocationTargetException)e).getTargetException();
                     }
 
-                    debugOut("Plain socket creation failure", e);
-
+                    debugOut("Failure creating "+(ssl?"":"non-")+"SSL socket", e);
                     // throw this as an IOException, with the original exception attached.
                     IOException ioe = new IOException("Error connecting to " + serverHost + ", " + serverPort);
                     ioe.initCause(e);
@@ -366,10 +411,107 @@ public class MailConnection {
                 }
             }
         }
-        // if we have a timeout value, set that before returning 
-        if (timeout >= 0) {
-            socket.setSoTimeout(timeout);
+        
+        return true;
+    }
+    
+    private void createSocketFromFactory(SocketFactory sf, boolean layer) throws IOException {
+        
+        if(sf instanceof SSLSocketFactory && layer) {
+            socket = ((SSLSocketFactory) sf).createSocket(socket, serverHost, serverPort, true);
+            return;
         }
+        
+        if (localAddress != null) {
+            socket = sf.createSocket(serverHost, serverPort, localAddress, localPort);
+        } else
+        {
+            socket = sf.createSocket(serverHost, serverPort);
+        }
+    }
+    
+    private boolean createSocketFromConfiguredFactoryInstance(boolean ssl, boolean layer) throws IOException {
+        
+        
+        
+        if (ssl) {
+            Object sfProp = props.getPropertyAsObject(MAIL_SSL_FACTORY);
+            if (sfProp != null && sfProp instanceof SSLSocketFactory) {
+                createSocketFromFactory((SSLSocketFactory) sfProp, layer);
+                debugOut("Creating "+(ssl?"":"non-")+"SSL "+(layer?"layered":"non-layered")+" socket using a instance of factory " + sfProp.getClass()+ " listening");
+                return true;
+            }
+        } else {
+            Object sfProp = props.getPropertyAsObject(MAIL_FACTORY);
+            if (sfProp != null && sfProp instanceof SocketFactory) {
+                createSocketFromFactory((SocketFactory) sfProp, layer);
+                debugOut("Creating "+(ssl?"":"non-")+"SSL "+(layer?"layered":"non-layered")+" socket using a instance of factory " + sfProp.getClass()+ " listening");
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private void createSSLSocketFromSSLContext(boolean layer) throws IOException{
+        
+        debugOut("Creating "+(layer?"layered ":"non-layered ")+"SSL socket using SSL Context");
+
+        
+        try {
+            SSLContext sslcontext = SSLContext.getInstance("TLS");
+            
+            String sslTrust = props.getProperty(MAIL_SSL_TRUST);
+            
+            TrustManager trustManager = null;
+            
+            if(sslTrust != null) {
+                if(sslTrust.equals("*")) {
+                    trustManager = new SSLTrustManager(null, true); //trust all
+                } else
+                {
+                   String[] trustedHosts = sslTrust.split("\\s+");
+                   trustManager = new SSLTrustManager(trustedHosts, false); //trust some
+                   
+                   if(serverHost == null || serverHost.isEmpty() || !Arrays.asList(trustedHosts).contains(serverHost)) {
+                       throw new IOException("Server is not trusted: " + serverHost);
+                   }
+                   
+                }
+            } else {
+                trustManager = new SSLTrustManager(null, false); //default
+                
+            }
+             
+            sslcontext.init(null, new TrustManager[]{trustManager}, null);
+            
+            createSocketFromFactory(sslcontext.getSocketFactory(), layer);
+        } catch (KeyManagementException e) {
+            //cannot happen
+            throw new IOException(e);
+        } catch (NoSuchAlgorithmException e) {
+            //cannot happen
+            throw new IOException(e);
+        }
+    }
+    
+    private void createSocket(boolean ssl) throws IOException {
+        
+        if(createSocketFromConfiguredFactoryInstance(ssl, false)) {
+            return;
+        }
+
+        if(createSocketFromFactory(ssl, false)) {
+            return;
+        }
+        
+        if(!ssl) {
+            createSocketFromFactory(SocketFactory.getDefault(), false);
+            return;
+        }
+        
+          
+        createSSLSocketFromSSLContext(false);
     }
 
 
@@ -382,78 +524,12 @@ public class MailConnection {
         debugOut("Attempting SSL socket connection to server " + serverHost + ":" + serverPort);
         // the socket factory can be specified via a protocol property, a session property, and if all else
         // fails (which it usually does), we fall back to the standard factory class.
-        String socketFactory = props.getProperty(MAIL_FACTORY_CLASS, "javax.net.ssl.SSLSocketFactory");
 
         // make sure this is null 
         socket = null;
+        
+        createSocket(true);
 
-        // we'll try this with potentially two different factories if we're allowed to fall back.
-        boolean fallback = props.getBooleanProperty(MAIL_FACTORY_FALLBACK, false);
-
-        while (true) {
-            try {
-                debugOut("Creating SSL socket using factory " + socketFactory);
-
-                int socketFactoryPort = props.getIntProperty(MAIL_FACTORY_PORT, -1);
-
-                // we choose the port used by the socket based on overrides.
-                Integer portArg = new Integer(socketFactoryPort == -1 ? serverPort : socketFactoryPort);
-
-                // use the current context loader to resolve this.
-                ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                Class factoryClass = loader.loadClass(socketFactory);
-
-                // done indirectly, we need to invoke the method using reflection.
-                // This retrieves a factory instance.
-                Method getDefault = factoryClass.getMethod("getDefault", new Class[0]);
-                Object defFactory = getDefault.invoke(new Object(), new Object[0]);
-
-                // now that we have the factory, there are two different createSocket() calls we use,
-                // depending on whether we have a localAddress override.
-
-                if (localAddress != null) {
-                    // retrieve the createSocket(String, int, InetAddress, int) method.
-                    Class[] createSocketSig = new Class[] { String.class, Integer.TYPE, InetAddress.class, Integer.TYPE };
-                    Method createSocket = factoryClass.getMethod("createSocket", createSocketSig);
-
-                    Object[] createSocketArgs = new Object[] { serverHost, portArg, localAddress, new Integer(localPort) };
-                    socket = (Socket)createSocket.invoke(defFactory, createSocketArgs);
-                    break; 
-                }
-                else {
-                    // retrieve the createSocket(String, int) method.
-                    Class[] createSocketSig = new Class[] { String.class, Integer.TYPE };
-                    Method createSocket = factoryClass.getMethod("createSocket", createSocketSig);
-
-                    Object[] createSocketArgs = new Object[] { serverHost, portArg };
-                    socket = (Socket)createSocket.invoke(defFactory, createSocketArgs);
-                    break; 
-                }
-            } catch (Throwable e) {
-                // if we're allowed to fallback, then use the default factory and try this again.  We only
-                // allow this to happen once.
-                if (fallback) {
-                    debugOut("First attempt at creating SSL socket failed, falling back to default factory");
-                    socketFactory = "javax.net.ssl.SSLSocketFactory";
-                    fallback = false;
-                    continue;
-                }
-                // we have an exception.  We're going to throw an IOException, which may require unwrapping
-                // or rewrapping the exception.
-                else {
-                    // we have an exception from the reflection, so unwrap the base exception
-                    if (e instanceof InvocationTargetException) {
-                        e = ((InvocationTargetException)e).getTargetException();
-                    }
-
-                    debugOut("Failure creating SSL socket", e);
-                    // throw this as an IOException, with the original exception attached.
-                    IOException ioe = new IOException("Error connecting to " + serverHost + ", " + serverPort);
-                    ioe.initCause(e);
-                    throw ioe;
-                }
-            }
-        }
         // and set the timeout value 
         if (timeout >= 0) {
             socket.setSoTimeout(timeout);
@@ -497,44 +573,34 @@ public class MailConnection {
      	try {
 
             // we use the same target and port as the current connection.
-            String host = socket.getInetAddress().getHostName();
-            int port = socket.getPort();
+            serverHost = socket.getInetAddress().getHostName();
+            serverPort = socket.getPort();
 
             // the socket factory can be specified via a session property.  By default, we use
             // the native SSL factory.
-            String socketFactory = props.getProperty(MAIL_FACTORY_CLASS, "javax.net.ssl.SSLSocketFactory");
-
-            // use the current context loader to resolve this.
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            Class factoryClass = loader.loadClass(socketFactory);
-
-            // done indirectly, we need to invoke the method using reflection.
-            // This retrieves a factory instance.
-            Method getDefault = factoryClass.getMethod("getDefault", new Class[0]);
-            Object defFactory = getDefault.invoke(new Object(), new Object[0]);
-
-            // now we need to invoke createSocket()
-            Class[] createSocketSig = new Class[] { Socket.class, String.class, Integer.TYPE, Boolean.TYPE };
-            Method createSocket = factoryClass.getMethod("createSocket", createSocketSig);
-
-            Object[] createSocketArgs = new Object[] { socket, host, new Integer(port), Boolean.TRUE };
-
-            // and finally create the socket
-            Socket sslSocket = (Socket)createSocket.invoke(defFactory, createSocketArgs);
+            if(createSocketFromConfiguredFactoryInstance(true, true)) {
+                debugOut("TLS socket factory configured as instance"); 
+            } else if(createSocketFromFactory(true, true)) {
+                debugOut("TLS socket factory configured as class"); 
+            } else {
+                debugOut("TLS socket factory from SSLContext"); 
+                createSSLSocketFromSSLContext(true);
+            }
 
             // if this is an instance of SSLSocket (very common), try setting the protocol to be
             // "TLSv1".  If this is some other class because of a factory override, we'll just have to
             // accept that things will work.
-            if (sslSocket instanceof SSLSocket) {
-                ((SSLSocket)sslSocket).setEnabledProtocols(new String[] {"TLSv1"} );
-                ((SSLSocket)sslSocket).setUseClientMode(true);
-                debugOut("Initiating STARTTLS handshake"); 
-                ((SSLSocket)sslSocket).startHandshake();
+            if (socket instanceof SSLSocket) {
+                String[] suites = ((SSLSocket)socket).getSupportedCipherSuites();
+                ((SSLSocket)socket).setEnabledCipherSuites(suites);
+                ((SSLSocket)socket).setEnabledProtocols(new String[] {"TLSv1"} );
+                ((SSLSocket)socket).setUseClientMode(true);
+                debugOut("Initiating STARTTLS handshake");
+                ((SSLSocket)socket).startHandshake();
+            } else {
+                throw new IOException("Socket is not an instance of SSLSocket, maybe wrong configured ssl factory?");
             }
 
-
-            // this is our active socket now
-            socket = sslSocket;
             getConnectionStreams(); 
             debugOut("TLS connection established"); 
      	}
@@ -837,5 +903,58 @@ public class MailConnection {
      */
     public void setLocalHost(String localHost) {
         this.localHost = localHost;
+    }
+    
+    private class SSLTrustManager implements X509TrustManager {
+        
+        private final X509TrustManager defaultTrustManager;
+        
+        private final boolean trustAll;
+        private final String[] trustedHosts;
+
+        SSLTrustManager(String[] trustedHosts, boolean trustAll) throws IOException{
+            super();
+            this.trustAll = trustAll;
+            this.trustedHosts = trustedHosts;
+            
+            try {
+                TrustManagerFactory defaultTrustManagerFactory = TrustManagerFactory.getInstance("X509");
+                defaultTrustManagerFactory.init((KeyStore)null);
+                defaultTrustManager = (X509TrustManager) defaultTrustManagerFactory.getTrustManagers()[0];
+            } catch (NoSuchAlgorithmException e) {
+                //cannot happen
+                throw new IOException(e);
+            } catch (KeyStoreException e) {
+                //cannot happen
+                throw new IOException(e);
+            }
+            
+        }
+
+        /* (non-Javadoc)
+         * @see javax.net.ssl.X509TrustManager#checkClientTrusted(java.security.cert.X509Certificate[], java.lang.String)
+         */
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            defaultTrustManager.checkClientTrusted(chain, authType);
+            
+        }
+
+        /* (non-Javadoc)
+         * @see javax.net.ssl.X509TrustManager#checkServerTrusted(java.security.cert.X509Certificate[], java.lang.String)
+         */
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            if (!trustAll || trustedHosts != null) {
+                defaultTrustManager.checkServerTrusted(chain, authType);
+            }
+            
+        }
+
+        /* (non-Javadoc)
+         * @see javax.net.ssl.X509TrustManager#getAcceptedIssuers()
+         */
+        public X509Certificate[] getAcceptedIssuers() {
+            return defaultTrustManager.getAcceptedIssuers();
+        }
+        
     }
 }

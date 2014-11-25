@@ -64,6 +64,7 @@ public class SMTPConnection extends MailConnection {
     protected static final String MAIL_SMTP_ALLOW8BITMIME = "allow8bitmime";
     protected static final String MAIL_SMTP_REPORT_SUCCESS = "reportsuccess";
     protected static final String MAIL_SMTP_STARTTLS_ENABLE = "starttls.enable";
+    protected static final String MAIL_SMTP_STARTTLS_REQUIRED = "starttls.required";
     protected static final String MAIL_SMTP_AUTH = "auth";
     protected static final String MAIL_SMTP_FROM = "from";
     protected static final String MAIL_SMTP_DSN_RET = "dsn.ret";
@@ -83,6 +84,8 @@ public class SMTPConnection extends MailConnection {
     protected boolean serverTLS = false;
     // is TLS enabled on our part?
     protected boolean useTLS = false;
+    // is TLS required on our part?
+    protected boolean requireTLS = false;
     // should we use 8BITMIME encoding if supported by the server?
     protected boolean use8bit = false;
 
@@ -98,6 +101,8 @@ public class SMTPConnection extends MailConnection {
         reportSuccess = props.getBooleanProperty(MAIL_SMTP_REPORT_SUCCESS, false);
         // and also check for TLS enablement.
         useTLS = props.getBooleanProperty(MAIL_SMTP_STARTTLS_ENABLE, false);
+        // and also check if TLS is required.
+        requireTLS = props.getBooleanProperty(MAIL_SMTP_STARTTLS_REQUIRED, false);
         // and also check for 8bitmime support
         use8bit = props.getBooleanProperty(MAIL_SMTP_ALLOW8BITMIME, false);
     }
@@ -804,23 +809,31 @@ public class SMTPConnection extends MailConnection {
             sendHelo();
         }
 
-        if (useTLS) {
-            // if we've been told to use TLS, and this server doesn't support
-            // it, then this is a failure
-            if (!serverTLS) {
+        if (useTLS || requireTLS) {
+            // if we've been told to use TLS
+            // if its not required and server does not support it we establish an unsecure connection
+            //see GERONIMO-5873 and GERONIMO-5430
+            if (requireTLS && !serverTLS) {
+                // if we've been told to use TLS, and this server doesn't support
+                // it, then this is a failure
                 throw new MessagingException("Server doesn't support required transport level security");
-            }
-            // if the server supports TLS, then use it for the connection.
-            // on our connection.
-            getConnectedTLSSocket();
+            } else if (serverTLS){
+                // if the server supports TLS, then use it for the connection.
+                // on our connection.
+                getConnectedTLSSocket();
 
-            // some servers (gmail is one that I know of) only send a STARTTLS
-            // extension message on the
-            // first EHLO command. Now that we have the TLS handshaking
-            // established, we need to send a
-            // second EHLO message to retrieve the AUTH records from the server.
-            if (!sendEhlo()) {
-                throw new MessagingException("Failure sending EHLO command to SMTP server");
+                // some servers (gmail is one that I know of) only send a STARTTLS
+                // extension message on the
+                // first EHLO command. Now that we have the TLS handshaking
+                // established, we need to send a
+                // second EHLO message to retrieve the AUTH records from the server.
+                if (!sendEhlo()) {
+                    throw new MessagingException("Failure sending EHLO command to SMTP server");
+                }
+            } else {
+                if (debug) {
+                    debugOut("STARTTLS is enabled but not required and server does not support it. So we establish a connection without transport level security");
+                }
             }
         }
 
@@ -926,6 +939,27 @@ public class SMTPConnection extends MailConnection {
      */
     public void setStartTLS(boolean start) {
         useTLS = start;
+    }
+
+    
+    /**
+     * Return the current requireTLS property.
+     * 
+     * @return The current requireTLS property.
+     */
+    public boolean getRequireTLS() {
+        return requireTLS;
+    }
+
+
+    /**
+     * Set a new value for the requireTLS property.
+     * 
+     * @param require
+     *                  The new setting.
+     */
+    public void setRequireTLS(boolean require) {
+        requireTLS = require;
     }
 
 
