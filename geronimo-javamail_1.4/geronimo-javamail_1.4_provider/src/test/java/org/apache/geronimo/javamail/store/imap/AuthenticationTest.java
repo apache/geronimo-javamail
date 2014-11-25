@@ -16,15 +16,7 @@
  */
 package org.apache.geronimo.javamail.store.imap;
 
-import junit.framework.TestCase;
-import org.apache.geronimo.mail.util.Base64;
-
-import javax.mail.Folder;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Store;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -33,8 +25,27 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Properties;
 
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Store;
+
+import junit.framework.Assert;
+import junit.framework.TestCase;
+
+import org.apache.geronimo.mail.util.Base64;
+
 public class AuthenticationTest extends TestCase {
 
+    public void testImplUsage() throws Exception {
+
+        //check that we load our mail impl
+        Properties props = new Properties();
+        props.setProperty("mail.store.protocol", "imap");
+        Session jmsession = Session.getInstance(props);
+        Assert.assertEquals(org.apache.geronimo.javamail.store.imap.IMAPStore.class, jmsession.getStore().getClass());
+        
+    }
+    
     public void testAuthenticatePlain() throws Exception {
 
         //greenmail does not have AUTHENTICATE "PLAIN" support
