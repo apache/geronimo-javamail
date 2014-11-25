@@ -19,19 +19,18 @@ package org.apache.geronimo.javamail.store.imap;
 
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.Enumeration; 
+import java.util.Enumeration;
 
-import javax.activation.DataHandler;   
-
-import javax.mail.IllegalWriteException; 
+import javax.activation.DataHandler;
+import javax.mail.IllegalWriteException;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
-
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeUtility;
 
 import org.apache.geronimo.javamail.store.imap.connection.IMAPBodyStructure;
 import org.apache.geronimo.javamail.store.imap.connection.IMAPConnection;
+import org.apache.geronimo.mail.util.SessionUtil;
 
 
 public class IMAPMimeBodyPart extends MimeBodyPart {
@@ -179,6 +178,16 @@ public class IMAPMimeBodyPart extends MimeBodyPart {
         if (filename == null) {
             filename = bodyStructure.mimeType.getParameter("name");
         }
+        
+        // if we have a name, we might need to decode this if an additional property is set.
+        if (filename != null && SessionUtil.getBooleanProperty(MIME_DECODEFILENAME, false)) {
+            try {
+                filename = MimeUtility.decodeText(filename);
+            } catch (UnsupportedEncodingException e) {
+                throw new MessagingException("Unable to decode filename", e);
+            }
+        }
+        
         return filename;
     }
 
