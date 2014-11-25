@@ -45,7 +45,7 @@ public class ProtocolProperties {
         this.protocol = protocol; 
         this.sslConnection = sslConnection; 
         this.defaultPort = defaultPort; 
-        // this helps avoid a lot of concatentates when retrieving properties. 
+        // this helps avoid a lot of concatenates when retrieving properties. 
         protocolPrefix = "mail." + protocol + ".";
     }
     
@@ -103,6 +103,21 @@ public class ProtocolProperties {
         // using the protocol
         String fullName = protocolPrefix + name;
         return session.getProperty(fullName);
+    }
+    
+    /**
+     * Get a property (as object) associated with this mail protocol.
+     *
+     * @param name   The name of the property.
+     *
+     * @return The property value (returns null if the property has not been set).
+     */
+    public Object getPropertyAsObject(String name) {
+        // the name we're given is the least qualified part of the name.  
+        // We construct the full property name
+        // using the protocol
+        String fullName = protocolPrefix + name;
+        return session.getProperties().get(fullName);
     }
 
     /**

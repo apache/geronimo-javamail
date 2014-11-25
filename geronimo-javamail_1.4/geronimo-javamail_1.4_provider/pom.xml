@@ -104,7 +104,8 @@
                             javax.net.ssl*;resolution:="optional",
                             javax.security.sasl*;resolution:="optional",
                             javax.security.auth.callback*;resolution:="optional",
-                            org.apache.geronimo.mail.james.mime4j.codec
+                            org.apache.geronimo.mail.james.mime4j.codec,
+                            javax.net
                         </Import-Package>
                     </instructions>
                     <unpackBundle>true</unpackBundle>
