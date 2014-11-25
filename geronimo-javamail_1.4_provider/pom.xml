@@ -103,7 +103,8 @@
                             javax.imageio*;resolution:="optional",
                             javax.net.ssl*;resolution:="optional",
                             javax.security.sasl*;resolution:="optional",
-                            javax.security.auth.callback*;resolution:="optional"
+                            javax.security.auth.callback*;resolution:="optional",
+                            org.apache.geronimo.mail.james.mime4j.codec
                         </Import-Package>
                     </instructions>
                     <unpackBundle>true</unpackBundle>
