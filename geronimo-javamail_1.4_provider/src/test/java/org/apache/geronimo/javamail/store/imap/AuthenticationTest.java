@@ -33,6 +33,7 @@ import junit.framework.Assert;
 import junit.framework.TestCase;
 
 import org.apache.geronimo.mail.util.Base64;
+import org.apache.james.protocols.lib.PortUtil;
 
 public class AuthenticationTest extends TestCase {
 
@@ -48,12 +49,13 @@ public class AuthenticationTest extends TestCase {
     
     public void testAuthenticatePlain() throws Exception {
 
+        final int listenerPort = PortUtil.getNonPrivilegedPort();
         //greenmail does not have AUTHENTICATE "PLAIN" support
         FakeImapAuthPlainServer fs = new FakeImapAuthPlainServer(null, "user", "pass");
-        fs.startServer();
+        fs.startServer(listenerPort);
         // Setup JavaMail session
         Properties props = new Properties();
-        props.setProperty("mail.imap.port", "5111");
+        props.setProperty("mail.imap.port", String.valueOf(listenerPort));
         props.setProperty("mail.debug", String.valueOf(true));
         props.setProperty("mail.debug.auth", String.valueOf(true));
 
@@ -67,12 +69,13 @@ public class AuthenticationTest extends TestCase {
 
     public void testAuthenticatePlainFail() throws Exception {
 
+        final int listenerPort = PortUtil.getNonPrivilegedPort();
         //greenmail does not have AUTHENTICATE "PLAIN" support
         FakeImapAuthPlainServer fs = new FakeImapAuthPlainServer(null, "user", "pass");
-        fs.startServer();
+        fs.startServer(listenerPort);
         // Setup JavaMail session
         Properties props = new Properties();
-        props.setProperty("mail.imap.port", "5111");
+        props.setProperty("mail.imap.port", String.valueOf(listenerPort));
         props.setProperty("mail.debug", String.valueOf(true));
         props.setProperty("mail.debug.auth", String.valueOf(true));
         Session session = Session.getInstance(props);
@@ -89,12 +92,13 @@ public class AuthenticationTest extends TestCase {
 
     public void testAuthenticatePlainAuthzid() throws Exception {
 
+        final int listenerPort = PortUtil.getNonPrivilegedPort();
         //greenmail does not have AUTHENTICATE "PLAIN" support
         FakeImapAuthPlainServer fs = new FakeImapAuthPlainServer("authzid", "user", "pass");
-        fs.startServer();
+        fs.startServer(listenerPort);
         // Setup JavaMail session
         Properties props = new Properties();
-        props.setProperty("mail.imap.port", "5111");
+        props.setProperty("mail.imap.port", String.valueOf(listenerPort));
         props.setProperty("mail.debug", String.valueOf(true));
         props.setProperty("mail.debug.auth", String.valueOf(true));
         props.setProperty("mail.imap.sasl.authorizationid", "authzid");
@@ -123,9 +127,9 @@ public class AuthenticationTest extends TestCase {
             this.authzid = authzid==null?"":authzid;
         }
 
-        void startServer() throws IOException {
+        void startServer(int port) throws IOException {
 
-            serverSocket = new ServerSocket(5111);
+            serverSocket = new ServerSocket(port);
             this.setDaemon(false);
             this.start();
 
