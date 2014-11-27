@@ -19,13 +19,17 @@ package org.apache.geronimo.javamail.testserver;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -355,29 +359,35 @@ public class MailServer {
         return queue;
     }
 
-    public static File getAbsoluteFilePathFromClassPath(final String fileNameFromClasspath) {
+    public static File getAbsoluteFilePathFromClassPath(final String fileNameFromClasspath) throws FileNotFoundException {
 
         File configFile = null;
         final URL configURL = MailServer.class.getClassLoader().getResource(fileNameFromClasspath);
         if (configURL != null) {
             try {
-                configFile = new File(URLDecoder.decode(configURL.getFile(), "UTF-8"));
-            } catch (final UnsupportedEncodingException e) {
-                return null;
+                configFile = new File(configURL.toURI());
+            } catch (URISyntaxException e) {
+                configFile = new File(configURL.getPath());
             }
 
-            if (configFile.exists() && configFile.canRead()) {
+            //Java 7 only
+            /*if(!configFile.exists()) {
+                try {
+                    configFile = Paths.get(configURL.toURI()).toFile();
+                } catch (URISyntaxException e) {
+                    throw new FileNotFoundException("Failed to load " + fileNameFromClasspath+ " due to "+e);
+                }
+            }*/
+
+            if (configFile.exists()) {
                 return configFile;
             } else {
-
-                System.out.println("Cannot read from {}, maybe the file does not exists? " + configFile.getAbsolutePath());
+                throw new FileNotFoundException("Cannot read from "+configFile.getAbsolutePath()+" (original resource was "+fileNameFromClasspath+", URL: "+configURL+"), because the file does not exist");
             }
-
+            
         } else {
-            System.out.println("Failed to load " + fileNameFromClasspath);
+            throw new FileNotFoundException("Failed to load " + fileNameFromClasspath+", because resource cannot be found within the classpath");
         }
-
-        return null;
 
     }
 
@@ -392,7 +402,7 @@ public class MailServer {
             return listenerPort;
         }
 
-        public AbstractTestConfiguration enableSSL(final boolean enableStartTLS, final boolean enableSSL) {
+        public AbstractTestConfiguration enableSSL(final boolean enableStartTLS, final boolean enableSSL) throws FileNotFoundException {
             addProperty("tls.[@startTLS]", enableStartTLS);
             addProperty("tls.[@socketTLS]", enableSSL);
             addProperty("tls.keystore", "file://" + getAbsoluteFilePathFromClassPath("dummykeystore.jks").getAbsolutePath());
@@ -406,7 +416,8 @@ public class MailServer {
             addProperty("bind", "127.0.0.1:" + this.listenerPort);
             addProperty("connectiontimeout", "360000");
             //addProperty("jmxName", getServertype().name()+"on"+this.listenerPort);
-
+            addProperty("helloName", "jamesserver");
+            addProperty("helloName.[@autodetect]", false);
         }
 
     }
