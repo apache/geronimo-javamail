@@ -73,11 +73,29 @@ public class IssuesTest extends AbstractProtocolTest {
         }
 
     }
-
+    
     public void testGERONIMO4594() throws Exception {
+        Assert.assertTrue(doGERONIMO4594(true, true));
+    }
+    
+    public void testGERONIMO4594Fail0() throws Exception {
+        Assert.assertFalse(doGERONIMO4594(false, true));
+    }
+    
+    public void testGERONIMO4594Fail1() throws Exception {
+        Assert.assertFalse(doGERONIMO4594(false, false));
+    }
+    
+    public void testGERONIMO4594Fail2() throws Exception {
+        Assert.assertFalse(doGERONIMO4594(true, false));
+    }
+        
+    private boolean doGERONIMO4594(boolean decode, boolean encode) throws Exception {
 
-        System.setProperty("mail.mime.decodefilename", "true");
-        System.setProperty("mail.mime.encodefilename", "true");
+        final String specialFileName = "encoded_filename_\u00C4\u00DC\u00D6\u0226(test).pdf";
+        
+        System.setProperty("mail.mime.decodefilename", String.valueOf(decode));
+        System.setProperty("mail.mime.encodefilename", String.valueOf(encode));
         try {
 
             start();
@@ -99,11 +117,11 @@ public class IssuesTest extends AbstractProtocolTest {
             MimeBodyPart messageBodyPart = new MimeBodyPart();
             Multipart multipart = new MimeMultipart();
             messageBodyPart.setText("This is message body");
-            File file = MailServer.getAbsoluteFilePathFromClassPath("encoded_filename_ÄÜÖ(test).pdf");
+            File file = MailServer.getAbsoluteFilePathFromClassPath("pdf-test.pdf");
             Assert.assertTrue(file.exists());
             DataSource source = new FileDataSource(file.getAbsoluteFile());
             messageBodyPart.setDataHandler(new DataHandler(source));
-            messageBodyPart.setFileName(file.getName());
+            messageBodyPart.setFileName(specialFileName);
             multipart.addBodyPart(messageBodyPart);
             msg.setContent(multipart);
             sendMessage(msg);
@@ -117,9 +135,10 @@ public class IssuesTest extends AbstractProtocolTest {
             Assert.assertEquals(1, f.getMessageCount());
             Message[] messages = new Message[2];
             messages[0] = f.getMessage(1);
-            Assert.assertEquals("encoded_filename_ÄÜÖ(test).pdf", ((Multipart) messages[0].getContent()).getBodyPart(0).getFileName());
+            boolean match = specialFileName.equals(((Multipart) messages[0].getContent()).getBodyPart(0).getFileName());
             f.close(false);
             store.close();
+            return match;
 
         } finally {
             System.setProperty("mail.mime.decodefilename", "false");

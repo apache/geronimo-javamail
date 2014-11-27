@@ -97,6 +97,7 @@ public class MailServer {
     private MailQueueFactory queueFactory;
     private MailQueue queue;
     private final Semaphore sem = new Semaphore(0);
+    private final Logger log = LoggerFactory.getLogger("Mock");
 
     public void ensureMsgCount(final int count) throws InterruptedException {
         sem.acquire(count);
@@ -173,8 +174,6 @@ public class MailServer {
         imapServer.setFileSystem(fileSystem);
         pop3Server.setFileSystem(fileSystem);
         smtpServer.setFileSystem(fileSystem);
-
-        final Logger log = LoggerFactory.getLogger("Mock");
 
         imapServer.setLog(log);
         pop3Server.setLog(log);
@@ -327,6 +326,7 @@ public class MailServer {
         protocolHandlerChain.put("org.apache.james.smtpserver.protocol.DNSService", dnsService);
 
         final FileMailQueueFactory ff = new FileMailQueueFactory();// MockMailQueueFactory();
+        ff.setLog(log);
         ff.setFileSystem(fileSystem);
         queueFactory = ff;
 
