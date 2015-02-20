@@ -99,7 +99,7 @@
                                     <!-- All of the class files need to be excluded to avoid bnd errors about split packages -->
                                     <excludes>
                                         <exclude>javax/**</exclude>
-                                        <exclude>org/apache/geronimo/mail/**</exclude>
+                                        <exclude>org/apache/geronimo/mail/*.class</exclude>
                                         <exclude>org/apache/geronimo/osgi/**</exclude>
                                     </excludes>
                                 </filter>
