@@ -80,4 +80,18 @@ public class TraceOutputStream extends FilterOutputStream {
         }
         super.write(b);
     }
+
+    public void write(byte[] b, int off, int len) throws IOException {
+        if (this.debug) {
+            this.traceStream.write(b, off, len);
+        }
+        out.write(b, off, len);
+    }
+
+    public void write(byte[] b) throws IOException {
+        if (this.debug) {
+            this.traceStream.write(b);
+        }
+        out.write(b);
+    } 
 }

@@ -542,6 +542,7 @@ public class SMTPConnection extends MailConnection {
             mimeOut.writeSMTPTerminator();
             // and flush the data to send it along
             mimeOut.flush();
+            this.outputStream.flush(); // most of the time MIMEOutputStream#flush does nothing so ensure we actually flush the data
         } catch (IOException e) {
             throw new MessagingException(e.toString());
         } catch (MessagingException e) {
@@ -667,10 +668,8 @@ public class SMTPConnection extends MailConnection {
         if (socket == null || !socket.isConnected()) {
             throw new MessagingException("no connection");
         }
-        try {
-            outputStream.write(data.getBytes("ISO8859-1"));
-            outputStream.write(CR);
-            outputStream.write(LF);
+        try { // don't write it in multiple times, ie build the data + "\r\n" string in memory to not get surprises on servers read() side
+            outputStream.write((data + "\r\n").getBytes("ISO8859-1"));
             outputStream.flush();
         } catch (IOException e) {
             throw new MessagingException(e.toString());

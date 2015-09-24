@@ -99,4 +99,12 @@ public class TraceInputStream extends FilterInputStream {
         }
         return b;
     }
+
+    public int read(byte[] b) throws IOException {
+        final int read = in.read(b);
+        if (debug && read > 0) {
+            traceStream.write(b, 0, read);
+        }
+        return read;
+    }
 }
