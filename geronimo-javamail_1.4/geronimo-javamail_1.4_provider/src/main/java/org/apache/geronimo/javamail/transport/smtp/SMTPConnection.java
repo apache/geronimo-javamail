@@ -551,13 +551,7 @@ public class SMTPConnection extends MailConnection {
 
         // use a longer time out here to give the server time to process the
         // data.
-        try {
-            line = new SMTPReply(receiveLine(TIMEOUT * 2));
-        } catch (MalformedSMTPReplyException e) {
-            throw new MessagingException(e.toString());
-        } catch (MessagingException e) {
-            throw new MessagingException(e.toString());
-        }
+        line = getReply(TIMEOUT * 2);
 
         if (line.isError()) {
             throw new MessagingException("Error issuing SMTP 'DATA' command: " + line);
@@ -686,23 +680,25 @@ public class SMTPConnection extends MailConnection {
         return receiveLine(TIMEOUT);
     }
 
+    protected SMTPReply getReply() throws MessagingException {
+        return getReply(TIMEOUT);
+    }
+
     /**
      * Get a reply line for an SMTP command.
      *
      * @return An SMTP reply object from the stream.
      */
-    protected SMTPReply getReply() throws MessagingException {
+    protected SMTPReply getReply(int timeout) throws MessagingException {
         try {
-            lastServerResponse = new SMTPReply(receiveLine());
+            lastServerResponse = new SMTPReply(receiveLine(timeout));
             // if the first line we receive is a continuation, continue
             // reading lines until we reach the non-continued one.
             while (lastServerResponse.isContinued()) {
-                lastServerResponse.addLine(receiveLine());
+                lastServerResponse.addLine(receiveLine(timeout));
             }
         } catch (MalformedSMTPReplyException e) {
             throw new MessagingException(e.toString());
-        } catch (MessagingException e) {
-            throw e;
         }
         return lastServerResponse;
     }
