@@ -26,22 +26,22 @@
 
     <parent>
         <groupId>org.apache.geronimo.javamail</groupId>
-        <artifactId>geronimo-javamail_1.4</artifactId>
-        <version>1.9.0-SNAPSHOT</version>
+        <artifactId>geronimo-javamail_1.5</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>geronimo-javamail_1.4_mail</artifactId>
+    <artifactId>geronimo-javamail_1.5_mail</artifactId>
     <packaging>bundle</packaging>
-    <name>Geronimo JavaMail 1.4 :: Mail</name>
+    <name>Geronimo JavaMail 1.5 :: Mail</name>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.geronimo.javamail</groupId>
-            <artifactId>geronimo-javamail_1.4_provider</artifactId>
+            <artifactId>geronimo-javamail_1.5_provider</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
-            <artifactId>geronimo-javamail_1.4_spec</artifactId>
+            <artifactId>geronimo-javamail_1.5_spec</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
@@ -88,14 +88,14 @@
                         <configuration>
                             <artifactSet>
                                 <includes>
-                                    <include>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</include>
-                                    <include>org.apache.geronimo.javamail:geronimo-javamail_1.4_provider</include>
+                                    <include>org.apache.geronimo.specs:geronimo-javamail_1.5_spec</include>
+                                    <include>org.apache.geronimo.javamail:geronimo-javamail_1.5_provider</include>
                                     <include>${project.groupId}:${project.artifactId}</include>
                                 </includes>
                             </artifactSet>
                             <filters>
                                 <filter>
-                                    <artifact>org.apache.geronimo.specs:geronimo-javamail_1.4_spec</artifact>
+                                    <artifact>org.apache.geronimo.specs:geronimo-javamail_1.5_spec</artifact>
                                     <!-- All of the class files need to be excluded to avoid bnd errors about split packages -->
                                     <excludes>
                                         <exclude>javax/**</exclude>
@@ -104,7 +104,7 @@
                                     </excludes>
                                 </filter>
                                 <filter>
-                                    <artifact>org.apache.geronimo.javamail:geronimo-javamail_1.4_provider</artifact>
+                                    <artifact>org.apache.geronimo.javamail:geronimo-javamail_1.5_provider</artifact>
                                     <excludes>
                                         <exclude>org/apache/geronimo/javamail/**</exclude>
                                         <exclude>org/apache/geronimo/osgi/**</exclude>
@@ -124,9 +124,9 @@
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>${project.groupId}.${project.artifactId};singleton=true</Bundle-SymbolicName>
-                        <Specification-Title>JSR-919 Javamail API 1.4 merged bundle</Specification-Title>
+                        <Specification-Title>JSR-919 Javamail API 1.5 merged bundle</Specification-Title>
                         <Specification-Vendor>Sun Microsystems, Inc.</Specification-Vendor>
-                        <Specification-Version>1.4</Specification-Version>
+                        <Specification-Version>1.5</Specification-Version>
                         <Private-Package>
                             org.apache.geronimo.osgi.locator,
                             org.apache.geronimo.mail,
@@ -135,11 +135,11 @@
                             org.apache.geronimo.javamail.authentication
                         </Private-Package>
                         <Export-Package>
-                            javax.mail*;version=1.4,
-                            org.apache.geronimo.javamail.handlers*;version=1.4,
-                            org.apache.geronimo.javamail.store*;version=1.4,
-                            org.apache.geronimo.javamail.transport*;version=1.4,
-                            org.apache.geronimo.mail.handlers*;version=1.4,
+                            javax.mail*;version=1.5,
+                            org.apache.geronimo.javamail.handlers*;version=1.5,
+                            org.apache.geronimo.javamail.store*;version=1.5,
+                            org.apache.geronimo.javamail.transport*;version=1.5,
+                            org.apache.geronimo.mail.handlers*;version=1.5,
                         </Export-Package>
                         <Import-Package>
                             javax.activation,
