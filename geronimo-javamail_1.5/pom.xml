@@ -24,20 +24,20 @@
     </parent>
 
     <groupId>org.apache.geronimo.javamail</groupId>
-    <artifactId>geronimo-javamail_1.4</artifactId>
-    <name>Geronimo JavaMail 1.4</name>
+    <artifactId>geronimo-javamail_1.5</artifactId>
+    <name>Geronimo JavaMail 1.5</name>
     <packaging>pom</packaging>
 
-    <version>1.9.0-SNAPSHOT</version>
+    <version>0.0.1-SNAPSHOT</version>
 
     <description>
         Geronimmo JavaMail Bundle.
     </description>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.4</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.4</developerConnection>
-        <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/geronimo-javamail_1.4</url>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.5</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.5</developerConnection>
+        <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/geronimo-javamail_1.5</url>
     </scm>
 
     <properties>
@@ -64,8 +64,8 @@
 
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
-                <artifactId>geronimo-javamail_1.4_spec</artifactId>
-                <version>1.7.2-alpha-1</version>
+                <artifactId>geronimo-javamail_1.5_spec</artifactId>
+                <version>${project.version}</version>
             </dependency>
 
             <dependency>
@@ -78,7 +78,7 @@
 
             <dependency>
                 <groupId>org.apache.geronimo.javamail</groupId>
-                <artifactId>geronimo-javamail_1.4_provider</artifactId>
+                <artifactId>geronimo-javamail_1.5_provider</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -186,8 +186,8 @@
     </build>
 
     <modules>
-        <module>geronimo-javamail_1.4_provider</module>
-        <module>geronimo-javamail_1.4_mail</module>
+        <module>geronimo-javamail_1.5_provider</module>
+        <module>geronimo-javamail_1.5_mail</module>
     </modules>
 
     <reporting>

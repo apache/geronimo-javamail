@@ -16,9 +16,9 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-# Geronimo JavaMail 1.4
+# Geronimo JavaMail 1.5
 
-Geronimo JavaMail 1.4
+Geronimo JavaMail 1.5
 
 ## Get started
 
@@ -29,7 +29,7 @@ Just get it from maven
 <pre class="prettyprint linenums"><![CDATA[
 <dependency>
 	<groupId>org.apache.geronimo.javamail</groupId>
-	<artifactId>geronimo-javamail_1.4_provider</artifactId>
-	<version>1.9.0-SNAPSHOT</version>
+	<artifactId>geronimo-javamail_1.5_provider</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
 </dependency>
 ]]></pre>
