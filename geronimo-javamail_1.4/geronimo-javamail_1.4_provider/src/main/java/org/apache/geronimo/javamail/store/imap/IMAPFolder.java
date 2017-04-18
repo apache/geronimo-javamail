@@ -1580,7 +1580,10 @@ public class IMAPFolder extends Folder implements UIDFolder, IMAPUntaggedRespons
     protected synchronized Folder[] filterFolders(String pattern, boolean subscribed) throws MessagingException {
         IMAPConnection connection = getConnection();
         // this is used to filter out our own folder from the search
-        String root = fullname + getSeparator();
+        String root = fullname;
+        if (!root.isEmpty()) {
+            root = root + getSeparator();
+        }
 
         List responses = null;
         try {
