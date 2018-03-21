@@ -180,7 +180,7 @@ public class IMAPMimeBodyPart extends MimeBodyPart {
         }
         
         // if we have a name, we might need to decode this if an additional property is set.
-        if (filename != null && SessionUtil.getBooleanProperty(MIME_DECODEFILENAME, false)) {
+        if (filename != null && SessionUtil.getBooleanProperty("mail.mime.decodefilename", false)) {
             try {
                 filename = MimeUtility.decodeText(filename);
             } catch (UnsupportedEncodingException e) {
