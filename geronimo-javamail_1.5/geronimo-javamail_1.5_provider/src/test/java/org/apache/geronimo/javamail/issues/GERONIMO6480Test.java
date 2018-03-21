@@ -37,17 +37,19 @@ import junit.framework.Assert;
 import org.apache.geronimo.javamail.testserver.AbstractProtocolTest;
 
 public class GERONIMO6480Test extends AbstractProtocolTest {
-
     public void testGERONIMO6480_0() throws Exception {
+        System.setProperty("mail.mime.setcontenttypefilename", "false");
         BodyPart attachmentPart = new MimeBodyPart();
         attachmentPart.setDataHandler(new DataHandler(new FileDataSource(getAbsoluteFilePathFromClassPath("pdf-test.pdf"))));
         attachmentPart.setFileName("test.pdf");
         String contentType = getSendedAttachmentContentType(attachmentPart);
         Assert.assertEquals("application/octet-stream; name=test.pdf".toLowerCase(), contentType.toLowerCase());
         // "text/plain; name=test.pdf" with Geronimo because setFileName force it to 'text/plain' when adding the 'name=' part instead of keeping it null
+        System.clearProperty("mail.mime.setcontenttypefilename");
     }
 
     public void testGERONIMO6480_1() throws Exception {
+        System.setProperty("mail.mime.setcontenttypefilename", "false");
         BodyPart attachmentPart = new MimeBodyPart();
         attachmentPart.addHeader("Content-Type", "aplication/pdf");
         // setDataHandler reset "Content-Type" so equivalent to previous test
@@ -56,6 +58,7 @@ public class GERONIMO6480Test extends AbstractProtocolTest {
         String contentType = getSendedAttachmentContentType(attachmentPart);
         Assert.assertEquals("application/octet-stream; name=test.pdf".toLowerCase(), contentType.toLowerCase());
         // "text/plain; name=test.pdf" with Geronimo because setFileName force it to 'text/plain' when adding the 'name=' part instead of keeping it null
+        System.clearProperty("mail.mime.setcontenttypefilename");
     }
 
     public void testGERONIMO6480_2() throws Exception {
