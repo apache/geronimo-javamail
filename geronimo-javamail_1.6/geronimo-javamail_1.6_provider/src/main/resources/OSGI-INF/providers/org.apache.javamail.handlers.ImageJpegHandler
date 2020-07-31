@@ -1,0 +1,1 @@
+org.apache.geronimo.javamail.handlers.ImageJpegHandler   # This is directly mapped back to the same class name
