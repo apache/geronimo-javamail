@@ -1491,6 +1491,11 @@ public class IMAPFolder extends Folder implements UIDFolder, IMAPUntaggedRespons
         }
     }
 
+    @Override
+    public long getUIDNext() throws MessagingException {
+        throw new UnsupportedOperationException("I haven't been implemented yet!");
+    }
+
     /**
      * Retrieve a message from a UID/message mapping.
      *
