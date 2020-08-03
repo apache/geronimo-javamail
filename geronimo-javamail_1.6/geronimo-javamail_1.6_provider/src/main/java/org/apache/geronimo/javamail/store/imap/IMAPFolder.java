@@ -36,16 +36,7 @@ import javax.mail.event.MessageChangedEvent;
 import javax.mail.search.FlagTerm;
 import javax.mail.search.SearchTerm;
 
-import org.apache.geronimo.javamail.store.imap.connection.IMAPConnection;
-import org.apache.geronimo.javamail.store.imap.connection.IMAPFetchDataItem;
-import org.apache.geronimo.javamail.store.imap.connection.IMAPFetchResponse;
-import org.apache.geronimo.javamail.store.imap.connection.IMAPFlags;
-import org.apache.geronimo.javamail.store.imap.connection.IMAPListResponse;
-import org.apache.geronimo.javamail.store.imap.connection.IMAPMailboxStatus;
-import org.apache.geronimo.javamail.store.imap.connection.IMAPSizeResponse;
-import org.apache.geronimo.javamail.store.imap.connection.IMAPUid;
-import org.apache.geronimo.javamail.store.imap.connection.IMAPUntaggedResponse;
-import org.apache.geronimo.javamail.store.imap.connection.IMAPUntaggedResponseHandler;
+import org.apache.geronimo.javamail.store.imap.connection.*;
 
 /**
  * The base IMAP implementation of the javax.mail.Folder
@@ -1493,7 +1484,11 @@ public class IMAPFolder extends Folder implements UIDFolder, IMAPUntaggedRespons
 
     @Override
     public long getUIDNext() throws MessagingException {
-        throw new UnsupportedOperationException("I haven't been implemented yet!");
+        if (folderOpen) {
+            return nextMessageID;
+        }
+
+        return -1; // Unknown
     }
 
     /**
