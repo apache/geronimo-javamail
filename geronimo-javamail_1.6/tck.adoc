@@ -25,13 +25,8 @@ Exec onto the container to finish the setup
 Run these commands to complete the setup
 
 ```
-cd /root
 /root/startup.sh | tee /root/mailserver.log &
-sleep 120
-bash -x /root/create_users.sh 2>&1 | tee /root/create_users.log
-echo "Mail server setup complete"
 ```
-
 
 # Set up the TCK
 
@@ -54,9 +49,12 @@ LOCAL_CLASSES=$JARPATH/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar
 
 # Setup the mailbox
 
-This seems to be really bloody hard...
+```
+cd tests/mailbox
+java fpopulate -s test1 -d imap://user01%40james.local:1234@localhost:1143/test1
+```
 
-
+^^ I had some issues running this with Geronimo, but succeeded with Jakarta Mail.
 
 # Finish the config:
 
@@ -85,7 +83,7 @@ JAVAMAIL_PROTOCOL=imap
 JAVAMAIL_TRANSPORT_PROTOCOL=smtp
 
 # mail server used to run tests against.
-JAVAMAIL_TRANSPORT_SERVER=localhost -pn 1025
+JAVAMAIL_TRANSPORT_SERVER=localhost -tpn 1025
 
 # rootpath of test mailboxes
 JAVAMAIL_ROOT_PATH=""
@@ -108,4 +106,6 @@ SMTP_FROM=$SMTP_USERNAME
 # smtp To address
 SMTP_TO=$SMTP_USERNAME
 ```
+
+From $TCKHOME, run `ant gui`.
 
