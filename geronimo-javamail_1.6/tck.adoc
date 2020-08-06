@@ -1,0 +1,111 @@
+# Docker CTS Mailserver setup
+
+Create a docker-compose.yml file:
+
+```
+version: '3'
+services:
+  mailserver:
+    image: jakartaee/cts-mailserver:0.1
+    tty: true
+    ports:
+      - "1025:1025"
+      - "1143:1143"
+
+```
+
+Start the container:
+
+`docker-compose up -d`
+
+Exec onto the container to finish the setup
+
+`docker exec -ti tck_mailserver_1 /bin/bash`
+
+Run these commands to complete the setup
+
+```
+cd /root
+/root/startup.sh | tee /root/mailserver.log &
+sleep 120
+bash -x /root/create_users.sh 2>&1 | tee /root/create_users.log
+echo "Mail server setup complete"
+```
+
+
+# Set up the TCK
+
+Extract the mail TCK, cd to the new folder:
+
+`export TCKHOME=$(pwd)`
+`export JARPATH=$(pwd)`
+
+Copy Geronimo Javamail 1.6 jar to the TCK folder
+
+`cp ~/dev/geronimo-javamail/geronimo-javamail_1.6/geronimo-javamail_1.6_mail/target/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar .`
+
+`export CLASSPATH=$JARPATH/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar`
+
+Edit $TCKHOME/lib/ts.jts:
+
+TS_HOME=/home/jgallimore/dev/ee8tck/mail-tck
+JARPATH=/home/jgallimore/dev/ee8tck/mail-tck
+LOCAL_CLASSES=$JARPATH/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar
+
+# Setup the mailbox
+
+This seems to be really bloody hard...
+
+
+
+# Finish the config:
+
+Edit $TCKHOME/lib/ts.jte again
+
+```
+#----------------------------------------------------------------------
+#
+# Variables for Jakarta Mail Tests
+#
+#
+
+# mail server used to run tests against.
+JAVAMAIL_SERVER=localhost -pn 1143
+
+# user account on server
+JAVAMAIL_USERNAME=user01@james.local
+
+# password for above account name
+JAVAMAIL_PASSWORD=1234
+
+# protocol used to run the Store tests
+JAVAMAIL_PROTOCOL=imap
+
+# Transport protocol used by tests
+JAVAMAIL_TRANSPORT_PROTOCOL=smtp
+
+# mail server used to run tests against.
+JAVAMAIL_TRANSPORT_SERVER=localhost -pn 1025
+
+# rootpath of test mailboxes
+JAVAMAIL_ROOT_PATH=""
+
+# note the mailbox 'test1'
+JAVAMAIL_MAILBOX=test1
+
+# search pattern used by list tests in Folder
+JAVAMAIL_LISTPATTERN=test
+
+# your own login account name
+SMTP_USERNAME=$JAVAMAIL_USERNAME
+
+# smtp domain name ; i.e. aol.com, sun.com
+SMTP_DOMAIN=james.local
+
+# smtp From address
+SMTP_FROM=$SMTP_USERNAME
+
+# smtp To address
+SMTP_TO=$SMTP_USERNAME
+```
+
