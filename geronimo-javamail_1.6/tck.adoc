@@ -41,20 +41,28 @@ Copy Geronimo Javamail 1.6 jar to the TCK folder
 
 `export CLASSPATH=$JARPATH/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar`
 
-Edit $TCKHOME/lib/ts.jts:
+Edit `$TCKHOME/lib/ts.jte`:
 
+```
+JAVA_HOME=/home/jgallimore/.sdkman/candidates/java/8
 TS_HOME=/home/jgallimore/dev/ee8tck/mail-tck
 JARPATH=/home/jgallimore/dev/ee8tck/mail-tck
 LOCAL_CLASSES=$JARPATH/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar
+```
 
 # Setup the mailbox
 
 ```
-cd tests/mailbox
-java fpopulate -s test1 -d imap://user01%40james.local:1234@localhost:1143/test1
+cd tests/mailboxes/
+wget https://github.com/javaee/javamail/releases/download/JAVAMAIL-1_6_2/javax.mail.jar
+unzip javax.mail.jar
+java -cp . fpopulate -s test1 -d imap://user01%40james.local:1234@localhost:1143/test1
 ```
 
-^^ I had some issues running this with Geronimo, but succeeded with Jakarta Mail.
+Notes:
+
+* Make sure having execution permissions over `fpopulate`
+* I had some issues running this with Geronimo, but succeeded with Jakarta Mail.
 
 # Finish the config:
 
@@ -109,3 +117,6 @@ SMTP_TO=$SMTP_USERNAME
 
 From $TCKHOME, run `ant gui`.
 
+From the UI, `File->Open->TestSuite` and select the `tests` folders
+
+Click `Run` and choose `Open Work Directory` by selecting `JTWork`
