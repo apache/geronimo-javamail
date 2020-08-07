@@ -119,4 +119,14 @@ From $TCKHOME, run `ant gui`.
 
 From the UI, `File->Open->TestSuite` and select the `tests` folders
 
-Click `Run` and choose `Open Work Directory` by selecting `JTWork`
+Click `Run` and choose `Creates Work Directory` and creata new folder.
+
+If he `Configuration editor` pops up, you can select:
+
+- the `Environment file` located at `/mail-tck/lib/ts.jte`.
+- test envirnment: `mailUnix`
+- Sect the defaults for the next 7 options in the wizard and click on `done`
+
+
+
+
