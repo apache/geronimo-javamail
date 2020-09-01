@@ -109,6 +109,7 @@ public class MailConnection {
     protected static final String AUTHENTICATION_LOGIN = "LOGIN";
     protected static final String AUTHENTICATION_CRAMMD5 = "CRAM-MD5";
     protected static final String AUTHENTICATION_DIGESTMD5 = "DIGEST-MD5";
+    protected static final String AUTHENTICATION_XOAUTH2 = "XOAUTH2";
     
     // The mail Session we're associated with
     protected Session session; 
@@ -727,7 +728,7 @@ public class MailConnection {
      */
     protected List selectSaslMechanisms() {
         List configured = getSaslMechanisms(); 
-        List supported = getServerMechanisms(); 
+        List supported = getServerMechanisms();
         
         // if not restricted, then we'll select from anything supported. 
         if (configured.isEmpty()) {

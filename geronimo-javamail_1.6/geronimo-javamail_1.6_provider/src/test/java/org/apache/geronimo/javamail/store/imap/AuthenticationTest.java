@@ -111,6 +111,36 @@ public class AuthenticationTest extends TestCase {
         assertNull(fs.exception);
     }
 
+    public void testAuthenticateOauth2() throws Exception {
+
+//        final int listenerPort = PortUtil.getNonPrivilegedPort();
+//
+//        FakeImapAuthPlainServer fs = new FakeImapAuthPlainServer(null, "user", "pass");
+//        fs.startServer(listenerPort);
+
+        // Setup JavaMail session
+        Properties props = new Properties();
+//        props.setProperty("mail.imap.port", String.valueOf(listenerPort));
+        props.setProperty("mail.imap.port", "993");
+        props.setProperty("mail.debug", String.valueOf(true));
+        props.setProperty("mail.debug.auth", String.valueOf(true));
+        props.setProperty("mail.imap.sasl.enable", String.valueOf(true));
+        props.setProperty("mail.imap.sasl.mechanisms", "XOAUTH2");
+        props.setProperty("mail.imap.ssl.enable", "true");
+        props.setProperty("mail.imap.starttls.enable", "true");
+        props.setProperty("mail.imap.starttls.required", "true");
+        props.setProperty("mail.imap.auth.login.disable", "true");
+        props.setProperty("mail.imap.auth.plain.disable", "true");
+
+
+        Session session = Session.getInstance(props);
+        Store store = session.getStore("imap");
+//        store.connect("localhost", "user", "pass");
+        store.connect("imap.gmail.com", "norm@gmail.com", "normPassword");
+        assertTrue(store.isConnected());
+        //fs.join();
+        //assertNull(fs.exception);
+    }
 
     private class FakeImapAuthPlainServer extends Thread{
 

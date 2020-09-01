@@ -128,6 +128,11 @@ If he `Configuration editor` pops up, you can select:
 - Sect the defaults for the next 7 options in the wizard and click on `done`
 
 
+# Run an individual test via commandline
+```
+/Users/cesar/.sdkman/candidates/java/8/bin/java  -verify javasoft.sqe.tests.javax.mail.Address.equals_Test -t imap -tp smtp -h localhost -pn 1143 -th localhost -tpn 1025 -u 'user01@james.local' -p 1234  -r '' -m test1 -D
+```
+
 # Debug an individual test
 
 The following example allow a remote debug over the  test `javasoft.sqe.tests.javax.mail.Address.equals_Test`.
@@ -137,5 +142,5 @@ export CLASSPATH=/Users/cesar/juniverse/tck/mail-tck/tests/../classes:/Users/ces
 ```
 
 ```
-/Users/cesar/.sdkman/candidates/java/8/bin/java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005 -verify javasoft.sqe.tests.javax.mail.Address.equals_Test -t imap -tp smtp -h localhost -pn 1143 -th localhost -tpn 1025 -u 'user01@james.loca'l -p 1234  -m test1 -D
+/Users/cesar/.sdkman/candidates/java/8/bin/java  -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005 -verify javasoft.sqe.tests.javax.mail.Address.equals_Test -t imap -tp smtp -h localhost -pn 1143 -th localhost -tpn 1025 -u 'user01@james.local' -p 1234  -r '' -m test1 -D
 ```

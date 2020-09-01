@@ -491,6 +491,16 @@ public class IMAPConnection extends MailConnection {
             // we might be enable for SASL, but the client and the server might
             // not have any supported mechanisms in common.  Try again with another
             // mechanism.
+
+            //We obtain only the SASL mechanisms to use
+            final List saslMechanisms = getSaslMechanisms();
+
+            if (saslMechanisms != null && saslMechanisms.contains(AUTHENTICATION_XOAUTH2)) {
+                if (processOauthAuthentication()) {
+                    return true;
+                }
+            }
+
             if (processSaslAuthentication()) {
                 return true;
             }
@@ -516,6 +526,25 @@ public class IMAPConnection extends MailConnection {
         throw new MessagingException("No supported LOGIN methods enabled");
     }
 
+    /**
+     * Process XOAUTH2-type authentication.
+     * @return Returns true if the server support a XOAUTH2 authentication mechanism and
+     *         accepted response challenges.
+     * @throws MessagingException
+     */
+    protected boolean processOauthAuthentication() throws MessagingException {
+        ClientAuthenticator authenticator = getOauthAuthenticator();
+        if (authenticator == null) {
+            return false;
+        }
+
+        // go process the login.
+        return processLogin(authenticator);
+    }
+
+    protected ClientAuthenticator getOauthAuthenticator() {
+        return AuthenticatorFactory.getAuthenticator(props, selectSaslMechanisms(), serverHost, username, password, authid, realm);
+    }
 
     /**
      * Process SASL-type authentication.

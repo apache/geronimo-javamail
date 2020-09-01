@@ -31,6 +31,7 @@ public class AuthenticatorFactory {
     public static final String AUTHENTICATION_LOGIN = "LOGIN";
     public static final String AUTHENTICATION_CRAMMD5 = "CRAM-MD5";
     public static final String AUTHENTICATION_DIGESTMD5 = "DIGEST-MD5";
+    public static final String AUTHENTICATION_XOAUTH2 = "XOAUTH2";
 
     static public ClientAuthenticator getAuthenticator(ProtocolProperties props, List mechanisms, String host, String username, String password, String authId, String realm)
     {
@@ -45,6 +46,11 @@ public class AuthenticatorFactory {
             String [] mechs = (String [])mechanisms.toArray(new String[mechanisms.size()]);
 
             try {
+
+                if(mechanisms.contains(AUTHENTICATION_XOAUTH2)){
+                    return new XOAUTH2Authenticator(authId, username, password);
+                }
+
                 // need to try to load this using reflection since it has references to
                 // the SASL API.  That's only available with 1.5 or later.
                 Class authenticatorClass = Class.forName("org.apache.geronimo.javamail.authentication.SASLAuthenticator");
