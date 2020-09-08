@@ -111,36 +111,82 @@ public class AuthenticationTest extends TestCase {
         assertNull(fs.exception);
     }
 
-    public void testAuthenticateOauth2() throws Exception {
 
-//        final int listenerPort = PortUtil.getNonPrivilegedPort();
-//
-//        FakeImapAuthPlainServer fs = new FakeImapAuthPlainServer(null, "user", "pass");
-//        fs.startServer(listenerPort);
-
+    public void testAuthenticateOAuth2() throws Exception {
+        final int listenerPort = PortUtil.getNonPrivilegedPort();
+        FakeImapAuthPlainServer fs = new FakeImapAuthPlainServer("", "user", "token");
+        fs.startServer(listenerPort);
         // Setup JavaMail session
         Properties props = new Properties();
-//        props.setProperty("mail.imap.port", String.valueOf(listenerPort));
-        props.setProperty("mail.imap.port", "993");
+        props.setProperty("mail.imap.port", String.valueOf(listenerPort));
         props.setProperty("mail.debug", String.valueOf(true));
         props.setProperty("mail.debug.auth", String.valueOf(true));
         props.setProperty("mail.imap.sasl.enable", String.valueOf(true));
         props.setProperty("mail.imap.sasl.mechanisms", "XOAUTH2");
-        props.setProperty("mail.imap.ssl.enable", "true");
-        props.setProperty("mail.imap.starttls.enable", "true");
-        props.setProperty("mail.imap.starttls.required", "true");
+//        Need it for services like Google IMAP OAuth2
+//        props.setProperty("mail.imap.ssl.enable", "true");
+//        props.setProperty("mail.imap.starttls.enable", "true");
+//        props.setProperty("mail.imap.starttls.required", "true");
         props.setProperty("mail.imap.auth.login.disable", "true");
         props.setProperty("mail.imap.auth.plain.disable", "true");
 
+        Session session = Session.getInstance(props);
+        Store store = session.getStore("imap");
+        store.connect("localhost", "user", "token");
+        assertTrue(store.isConnected());
+        fs.join();
+        assertNull(fs.exception);
+
+    }
+
+    public void testAuthenticateOAuth2Fail() throws Exception {
+        final int listenerPort = PortUtil.getNonPrivilegedPort();
+        FakeImapAuthPlainServer fs = new FakeImapAuthPlainServer("", "user", "token");
+        fs.startServer(listenerPort);
+        // Setup JavaMail session
+        Properties props = new Properties();
+        props.setProperty("mail.imap.port", String.valueOf(listenerPort));
+        props.setProperty("mail.debug", String.valueOf(true));
+        props.setProperty("mail.debug.auth", String.valueOf(true));
+        props.setProperty("mail.imap.sasl.enable", String.valueOf(true));
+        props.setProperty("mail.imap.sasl.mechanisms", "XOAUTH2");
+        //        Need it for services like Google IMAP OAuth2
+        //        props.setProperty("mail.imap.ssl.enable", "true");
+        //        props.setProperty("mail.imap.starttls.enable", "true");
+        //        props.setProperty("mail.imap.starttls.required", "true");
+        props.setProperty("mail.imap.auth.login.disable", "true");
+        props.setProperty("mail.imap.auth.plain.disable", "true");
 
         Session session = Session.getInstance(props);
         Store store = session.getStore("imap");
-//        store.connect("localhost", "user", "pass");
-        store.connect("imap.gmail.com", "norm@gmail.com", "normPassword");
-        assertTrue(store.isConnected());
-        //fs.join();
-        //assertNull(fs.exception);
+        try {
+
+            store.connect("localhost", "user", "token123");
+            fail();
+        } catch (MessagingException e) {
+            //expected
+        }
+
     }
+//    public void testAuthenticateOauth2WithGmail() throws Exception {
+//        // Setup JavaMail session
+//        Properties props = new Properties();
+//        props.setProperty("mail.imap.port", "993");
+//        props.setProperty("mail.debug", String.valueOf(true));
+//        props.setProperty("mail.debug.auth", String.valueOf(true));
+//        props.setProperty("mail.imap.sasl.enable", String.valueOf(true));
+//        props.setProperty("mail.imap.sasl.mechanisms", "XOAUTH2");
+//        props.setProperty("mail.imap.ssl.enable", "true");
+//        props.setProperty("mail.imap.starttls.enable", "true");
+//        props.setProperty("mail.imap.starttls.required", "true");
+//        props.setProperty("mail.imap.auth.login.disable", "true");
+//        props.setProperty("mail.imap.auth.plain.disable", "true");
+//
+//        Session session = Session.getInstance(props);
+//        Store store = session.getStore("imap");
+//        store.connect("imap.gmail.com", "user@gmail.com", "token");
+//        assertTrue(store.isConnected());
+//    }
 
     private class FakeImapAuthPlainServer extends Thread{
 
@@ -158,11 +204,9 @@ public class AuthenticationTest extends TestCase {
         }
 
         void startServer(int port) throws IOException {
-
             serverSocket = new ServerSocket(port);
             this.setDaemon(false);
             this.start();
-
         }
 
 
@@ -175,22 +219,33 @@ public class AuthenticationTest extends TestCase {
                 pw.flush();
                 String tag = br.readLine().split(" ")[0];
                 pw.write("* OK IMAP4rev1 Server ready\r\n");
-                pw.write("* CAPABILITY IMAP4rev1 AUTH=PLAIN\r\n");
+                pw.write("* CAPABILITY IMAP4rev1 AUTH=PLAIN AUTH=OAUTHBEARER AUTH=XOAUTH\r\n");
                 pw.write(tag+" OK CAPABILITY completed.\r\n");
                 pw.flush();
-                tag = br.readLine().split(" ")[0];
+                String answer_1 = br.readLine();
+                tag = answer_1.split(" ")[0];
+                String authType = answer_1.split(" ")[2];
                 pw.write("+ \r\n");
                 pw.flush();
                 String authline = new String(Base64.decode(br.readLine()));
                 System.out.println("authline : "+authline );
 
-                if(!"".equals(authzid) && !(authzid+"\0"+username+"\0"+password).equals(authline)) {
+                String challenge = "";
+                if (authType.equalsIgnoreCase("XOAUTH2")) {
+                    challenge = "user="+username+"\001auth=Bearer "+password+"\001\001";
+                } else if (authType.equalsIgnoreCase("PLAIN") && !"".equals(authzid)){
+                    challenge = authzid+"\0"+username+"\0"+password;
+                } else {
+                    challenge = username+"\0"+username+"\0"+password;
+                }
+
+                if(!"".equals(authzid) && !challenge.equals(authline)) {
                     pw.write(tag+" BAD username password invalid.\r\n");
                     pw.flush();
                     return;
                 }
 
-                if("".equals(authzid) && !(username+"\0"+username+"\0"+password).equals(authline) && !("\0"+username+"\0"+password).equals(authline)) {
+                if("".equals(authzid) && !challenge.equals(authline) && !("\0"+username+"\0"+password).equals(authline)) {
                     pw.write(tag+" BAD username password invalid.\r\n");
                     pw.flush();
                     return;

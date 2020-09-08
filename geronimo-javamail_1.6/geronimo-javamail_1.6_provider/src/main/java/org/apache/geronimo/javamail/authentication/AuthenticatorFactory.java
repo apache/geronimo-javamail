@@ -18,8 +18,10 @@
 package org.apache.geronimo.javamail.authentication;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.StringTokenizer;
 
 import org.apache.geronimo.javamail.util.ProtocolProperties;
 
@@ -32,6 +34,23 @@ public class AuthenticatorFactory {
     public static final String AUTHENTICATION_CRAMMD5 = "CRAM-MD5";
     public static final String AUTHENTICATION_DIGESTMD5 = "DIGEST-MD5";
     public static final String AUTHENTICATION_XOAUTH2 = "XOAUTH2";
+    private static final String MAIL_SASL_MECHANISMS = "sasl.mechanisms";
+
+    private static List getSaslMechanisms(ProtocolProperties props) {
+
+            List mechanisms = new ArrayList();
+            String mechList = props.getProperty(MAIL_SASL_MECHANISMS);
+            if (mechList != null) {
+                // the mechanisms are a blank or comma-separated list
+                StringTokenizer tokenizer = new StringTokenizer(mechList, " ,");
+
+                while (tokenizer.hasMoreTokens()) {
+                    String mech = tokenizer.nextToken().toUpperCase();
+                    mechanisms.add(mech);
+                }
+            }
+        return mechanisms;
+    }
 
     static public ClientAuthenticator getAuthenticator(ProtocolProperties props, List mechanisms, String host, String username, String password, String authId, String realm)
     {
@@ -47,13 +66,20 @@ public class AuthenticatorFactory {
 
             try {
 
-                if(mechanisms.contains(AUTHENTICATION_XOAUTH2)){
-                    return new XOAUTH2Authenticator(authId, username, password);
-                }
-
                 // need to try to load this using reflection since it has references to
                 // the SASL API.  That's only available with 1.5 or later.
-                Class authenticatorClass = Class.forName("org.apache.geronimo.javamail.authentication.SASLAuthenticator");
+                Class authenticatorClass = null;
+
+                //We obtain only the SASL mechanisms provided by the client properties
+                final List saslMechanisms = getSaslMechanisms(props);
+
+                if (saslMechanisms != null && saslMechanisms.contains(AUTHENTICATION_XOAUTH2)) {
+                    authenticatorClass = Class.forName("org.apache.geronimo.javamail.authentication.XOAUTH2Authenticator");
+                    XOAUTH2Authenticator.init();
+                }else{
+                    authenticatorClass = Class.forName("org.apache.geronimo.javamail.authentication.SASLAuthenticator");
+                }
+
                 Constructor c = authenticatorClass.getConstructor(new Class[] {
                     (new String[0]).getClass(),
                     Properties.class,
