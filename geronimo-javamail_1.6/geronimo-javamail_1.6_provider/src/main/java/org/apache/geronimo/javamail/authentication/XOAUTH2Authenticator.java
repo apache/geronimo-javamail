@@ -17,40 +17,32 @@
 
 package org.apache.geronimo.javamail.authentication;
 
-import java.security.Provider;
-import java.security.Security;
-import java.util.Map;
-import java.util.Properties;
-
 import javax.mail.MessagingException;
-
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
-import javax.security.sasl.SaslClient;
-import javax.security.sasl.SaslException;
 import javax.security.sasl.RealmCallback;
 import javax.security.sasl.RealmChoiceCallback;
+import java.io.UnsupportedEncodingException;
+import java.security.Provider;
+import java.security.Security;
+import java.util.Properties;
 
-public class XOAUTH2Authenticator implements ClientAuthenticator, CallbackHandler {
-    // The realm we're authenticating within
+public class XOAUTH2Authenticator implements ClientAuthenticator, CallbackHandler  {
+
+    //The realm we're authenticating within
     protected String realm;
-    // the user we're authenticating
+    //The user we're authenticating
     protected String username;
-    // the user's password (the "shared secret")
+    //The user's password (the "shared secret")
     protected String password;
-    // the authenticator we're proxying
-    protected SaslClient authenticator;
-
     protected boolean complete = false;
-
-
     private static final String SECURITY_PROVIDER = "JavaMail-OAuth2";
     private static final String CLIENT_FACTORY_NAME = "SaslClientFactory.XOAUTH2";
 
     /**
-     * XOAUTH2 SASL Mechanism
+     * XOAUTH2 SASL Mechanism provider
      */
     static class Oauth2Provider extends Provider {
         private static final long serialVersionUID = 1L;
@@ -85,16 +77,15 @@ public class XOAUTH2Authenticator implements ClientAuthenticator, CallbackHandle
         this.realm = realm;
         this.username = username;
         this.password = password;
-        authenticator = new Oauth2SaslClient( this);
     }
 
     /**
-     * Respond to the hasInitialResponse query. We defer this to the Sasl client.
+     * Respond to the hasInitialResponse query.
      *
      * @return The SaslClient response to the same query.
      */
     public boolean hasInitialResponse() {
-        return authenticator.hasInitialResponse();
+        return true;
     }
 
     /**
@@ -103,7 +94,7 @@ public class XOAUTH2Authenticator implements ClientAuthenticator, CallbackHandle
      * @return True if the last challenge has been processed, false otherwise.
      */
     public boolean isComplete() {
-        return authenticator.hasInitialResponse();
+        return complete;
     }
 
     /**
@@ -112,13 +103,12 @@ public class XOAUTH2Authenticator implements ClientAuthenticator, CallbackHandle
      * @return Will returns the string "XOAUTH2"
      */
     public String getMechanismName() {
-        return authenticator.getMechanismName();
+        return "XOAUTH2";
     }
 
     /**
      * Evaluate a login challenge, returning the a result string that
-     * should satisfy the challenge.  This is forwarded to the
-     * SaslClient, which will use the CallBackHandler to retrieve the
+     * should satisfy the challenge.  This use the CallBackHandler to retrieve the
      * information it needs for the given protocol.
      *
      * @param challenge The decoded challenge data, as byte array.
@@ -132,12 +122,39 @@ public class XOAUTH2Authenticator implements ClientAuthenticator, CallbackHandle
             challenge = new byte[0];
         }
 
-        try {
-            return authenticator.evaluateChallenge(challenge);
-        } catch (SaslException e) {
-            // got an error, fail this
-            throw new MessagingException("Error performing XOAUTH2 validation", e);
+        if (complete) {
+            return new byte[0];
+        } else {
+            try {
+                final NameCallback userName = new NameCallback("User name:");
+                final PasswordCallback token = new PasswordCallback("OAuth token:", false);
+                this.handle(new Callback[] { userName, token });
+                final String resp = "user=" + userName.getName() + "\001auth=Bearer " + new String(token.getPassword()) + "\001\001";
+                byte[] response;
+
+                try {
+                    response = resp.getBytes("utf-8");
+                } catch (UnsupportedEncodingException ex) {
+                    response = getBytes(resp);
+                }
+
+                complete = true;
+                return response;
+            } catch (Exception e) {
+                throw new MessagingException("Error XOAUTH2 challenge", e);
+            }
         }
+    }
+
+    private byte[] getBytes(String s) {
+        final char[] chars = s.toCharArray();
+        final int size = chars.length;
+        final byte[] bytes = new byte[size];
+
+        for (int i = 0; i < size; ) {
+            bytes[i] = (byte) chars[i++];
+        }
+        return bytes;
     }
 
     public void handle(Callback[] callBacks) {
