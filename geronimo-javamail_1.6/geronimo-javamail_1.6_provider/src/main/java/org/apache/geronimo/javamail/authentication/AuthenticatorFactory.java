@@ -75,8 +75,7 @@ public class AuthenticatorFactory {
 
                 if (saslMechanisms != null && saslMechanisms.contains(AUTHENTICATION_XOAUTH2)) {
                     authenticatorClass = Class.forName("org.apache.geronimo.javamail.authentication.XOAUTH2Authenticator");
-                    XOAUTH2Authenticator.init();
-                }else{
+                } else {
                     authenticatorClass = Class.forName("org.apache.geronimo.javamail.authentication.SASLAuthenticator");
                 }
 
