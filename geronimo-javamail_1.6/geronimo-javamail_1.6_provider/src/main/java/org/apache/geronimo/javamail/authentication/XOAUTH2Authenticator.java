@@ -18,7 +18,7 @@
 package org.apache.geronimo.javamail.authentication;
 
 import javax.mail.MessagingException;
-import java.nio.charset.StandardCharsets;
+import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 
 public class XOAUTH2Authenticator implements ClientAuthenticator {
@@ -77,7 +77,7 @@ public class XOAUTH2Authenticator implements ClientAuthenticator {
      * @return A formatted challenge response, as an array of bytes.
      * @throws MessagingException
      */
-    public byte[] evaluateChallenge(final byte[] challenge) {
+    public byte[] evaluateChallenge(final byte[] challenge) throws MessagingException{
         if (complete) {
             return new byte[0];
         }
@@ -92,6 +92,11 @@ public class XOAUTH2Authenticator implements ClientAuthenticator {
 
 
         complete = true;
-        return response.getBytes(StandardCharsets.UTF_8);
+
+        try {
+            return response.getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new MessagingException("Invalid encoding");
+        }
     }
 }
