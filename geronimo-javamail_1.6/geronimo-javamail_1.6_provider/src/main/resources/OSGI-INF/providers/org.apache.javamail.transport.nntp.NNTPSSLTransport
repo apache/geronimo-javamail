@@ -1,0 +1,1 @@
+org.apache.geronimo.javamail.transport.nntp.NNTPSSLTransport   # This is directly mapped back to the same class name

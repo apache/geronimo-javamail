@@ -1,0 +1,146 @@
+# Docker CTS Mailserver setup
+
+Create a docker-compose.yml file:
+
+```
+version: '3'
+services:
+  mailserver:
+    image: jakartaee/cts-mailserver:0.1
+    tty: true
+    ports:
+      - "1025:1025"
+      - "1143:1143"
+
+```
+
+Start the container:
+
+`docker-compose up -d`
+
+Exec onto the container to finish the setup
+
+`docker exec -ti tck_mailserver_1 /bin/bash`
+
+Run these commands to complete the setup
+
+```
+/root/startup.sh | tee /root/mailserver.log &
+```
+
+# Set up the TCK
+
+Extract the mail TCK, cd to the new folder:
+
+`export TCKHOME=$(pwd)`
+`export JARPATH=$(pwd)`
+
+Copy Geronimo Javamail 1.6 jar to the TCK folder
+
+`cp ~/dev/geronimo-javamail/geronimo-javamail_1.6/geronimo-javamail_1.6_mail/target/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar .`
+
+`export CLASSPATH=$JARPATH/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar`
+
+Edit `$TCKHOME/lib/ts.jte`:
+
+```
+JAVA_HOME=/home/jgallimore/.sdkman/candidates/java/8
+TS_HOME=/home/jgallimore/dev/ee8tck/mail-tck
+JARPATH=/home/jgallimore/dev/ee8tck/mail-tck
+LOCAL_CLASSES=$JARPATH/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar
+```
+
+# Setup the mailbox
+
+```
+cd tests/mailboxes/
+wget https://github.com/javaee/javamail/releases/download/JAVAMAIL-1_6_2/javax.mail.jar
+unzip javax.mail.jar
+java -cp . fpopulate -s test1 -d imap://user01%40james.local:1234@localhost:1143/test1
+```
+
+Notes:
+
+* Make sure having execution permissions over `fpopulate`
+* I had some issues running this with Geronimo, but succeeded with Jakarta Mail.
+
+# Finish the config:
+
+Edit $TCKHOME/lib/ts.jte again
+
+```
+#----------------------------------------------------------------------
+#
+# Variables for Jakarta Mail Tests
+#
+#
+
+# mail server used to run tests against.
+JAVAMAIL_SERVER=localhost -pn 1143
+
+# user account on server
+JAVAMAIL_USERNAME=user01@james.local
+
+# password for above account name
+JAVAMAIL_PASSWORD=1234
+
+# protocol used to run the Store tests
+JAVAMAIL_PROTOCOL=imap
+
+# Transport protocol used by tests
+JAVAMAIL_TRANSPORT_PROTOCOL=smtp
+
+# mail server used to run tests against.
+JAVAMAIL_TRANSPORT_SERVER=localhost -tpn 1025
+
+# rootpath of test mailboxes
+JAVAMAIL_ROOT_PATH=""
+
+# note the mailbox 'test1'
+JAVAMAIL_MAILBOX=test1
+
+# search pattern used by list tests in Folder
+JAVAMAIL_LISTPATTERN=test
+
+# your own login account name
+SMTP_USERNAME=$JAVAMAIL_USERNAME
+
+# smtp domain name ; i.e. aol.com, sun.com
+SMTP_DOMAIN=james.local
+
+# smtp From address
+SMTP_FROM=$SMTP_USERNAME
+
+# smtp To address
+SMTP_TO=$SMTP_USERNAME
+```
+
+From $TCKHOME, run `ant gui`.
+
+From the UI, `File->Open->TestSuite` and select the `tests` folders
+
+Click `Run` and choose `Creates Work Directory` and creata new folder.
+
+If he `Configuration editor` pops up, you can select:
+
+- the `Environment file` located at `/mail-tck/lib/ts.jte`.
+- test envirnment: `mailUnix`
+- Sect the defaults for the next 7 options in the wizard and click on `done`
+
+
+# Run an individual test via commandline
+```
+/Users/cesar/.sdkman/candidates/java/8/bin/java  -verify javasoft.sqe.tests.javax.mail.Address.equals_Test -t imap -tp smtp -h localhost -pn 1143 -th localhost -tpn 1025 -u 'user01@james.local' -p 1234  -r '' -m test1 -D
+```
+
+# Debug an individual test
+
+The following example allow a remote debug over the  test `javasoft.sqe.tests.javax.mail.Address.equals_Test`.
+
+```
+export CLASSPATH=/Users/cesar/juniverse/tck/mail-tck/tests/../classes:/Users/cesar/juniverse/tck/mail-tck/workDirectory/classes:/Users/cesar/juniverse/tck/mail-tck/javatest.jar:/Users/cesar/juniverse/tck/mail-tck/sigtest.jar:/Users/cesar/juniverse/tck/mail-tck/geronimo-javamail_1.6_mail-1.0.0-SNAPSHOT.jar:/Users/cesar/juniverse/tck/mail-tck/classes
+```
+
+```
+/Users/cesar/.sdkman/candidates/java/8/bin/java  -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005 -verify javasoft.sqe.tests.javax.mail.Address.equals_Test -t imap -tp smtp -h localhost -pn 1143 -th localhost -tpn 1025 -u 'user01@james.local' -p 1234  -r '' -m test1 -D
+```
