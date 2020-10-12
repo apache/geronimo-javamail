@@ -27,16 +27,16 @@
     <name>Geronimo JavaMail 1.6</name>
     <packaging>pom</packaging>
 
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <description>
         Geronimmo JavaMail Bundle.
     </description>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/tags/geronimo-javamail_1.6-1.0.0</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/tags/geronimo-javamail_1.6-1.0.0</developerConnection>
-        <url>http://svn.apache.org/viewvc/geronimo/javamail/tags/geronimo-javamail_1.6-1.0.0</url>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.6</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/geronimo/javamail/trunk/geronimo-javamail_1.6</developerConnection>
+        <url>http://svn.apache.org/viewvc/geronimo/javamail/trunk/geronimo-javamail_1.6</url>
     </scm>
 
     <properties>
