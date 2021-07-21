@@ -536,45 +536,37 @@ public class MailConnection {
             socket.setSoTimeout(timeout);
         }
         
-        String[] protocols = getSpecifiedProtocols();
+        String[] protocols = getFromWhitespaceSeparatedProperty(MAIL_SSL_PROTOCOLS);
         if(protocols != null) {
             ((SSLSocket)socket).setEnabledProtocols(protocols);
         }
         
         // and do the same for any cipher suites 
-        String suites = props.getProperty(MAIL_SSL_CIPHERSUITES); 
+        String[] suites = getFromWhitespaceSeparatedProperty(MAIL_SSL_CIPHERSUITES);
         if (suites != null) {
-            ArrayList list = new ArrayList(); 
-            StringTokenizer t = new StringTokenizer(suites); 
-            
-            while (t.hasMoreTokens()) {
-                list.add(t.nextToken()); 
-            }
-            
-            ((SSLSocket)socket).setEnabledCipherSuites((String[])list.toArray(new String[list.size()])); 
+            ((SSLSocket)socket).setEnabledCipherSuites(suites);
         }
     }
 
     /**
-     * If there is a list of protocols specified, we need to break this down into the individual names
+     * If there is a list specified, we need to break this down into the individual names
      *
-     * @return {@code null}, if no SSL/TLS protocols are specified in {@link MailConnection#MAIL_SSL_PROTOCOLS}.
+     * @return {@code null}, if no list items are specified in the given property separated by whitespaces.
      */
-    protected String[] getSpecifiedProtocols() {
-        String protocols = props.getProperty(MAIL_SSL_PROTOCOLS);
-        if (protocols != null) {
+    protected String[] getFromWhitespaceSeparatedProperty(String propertyName) {
+        String property = props.getProperty(propertyName);
+        if (property != null) {
             ArrayList<String> list = new ArrayList<>();
-            StringTokenizer t = new StringTokenizer(protocols);
+            StringTokenizer t = new StringTokenizer(property);
 
             while (t.hasMoreTokens()) {
                 list.add(t.nextToken());
             }
 
-           return list.toArray(new String[0]);
+            return list.toArray(new String[0]);
         }
         return null;
     }
-
 
     /**
      * Switch the connection to using TLS level security,
@@ -603,9 +595,14 @@ public class MailConnection {
             // If this is some other class because of a factory override, we'll just have to
             // accept that things will work.
             if (socket instanceof SSLSocket) {
-                String[] suites = ((SSLSocket)socket).getSupportedCipherSuites();
+                String[] suites = getFromWhitespaceSeparatedProperty(MAIL_SSL_CIPHERSUITES);
+                if (suites == null) {
+                    // use all supported ciphers as no custom ciphers were specified
+                    suites = ((SSLSocket)socket).getSupportedCipherSuites();
+                    debugOut("No custom ciphers are specified, using all supported ciphers of the given SSLSocket: " + Arrays.toString(suites));
+                }
                 ((SSLSocket)socket).setEnabledCipherSuites(suites);
-                String[] protocols = getSpecifiedProtocols();
+                String[] protocols = getFromWhitespaceSeparatedProperty(MAIL_SSL_PROTOCOLS);
                 if(protocols != null) {
                     ((SSLSocket)socket).setEnabledProtocols(protocols);
                 } else {
@@ -811,7 +808,7 @@ public class MailConnection {
     /**
      * Internal debug output routine.
      *
-     * @param value  The string value to output.
+     * @param message  The string value to output.
      */
     protected void debugOut(String message) {
         if (debug) {
@@ -882,7 +879,7 @@ public class MailConnection {
      * Retrieve the local client host name.
      *
      * @return The string version of the local host name.
-     * @exception SMTPTransportException
+     * @exception MessagingException
      */
     public String getLocalHost() throws MessagingException {
         if (localHost == null) {
