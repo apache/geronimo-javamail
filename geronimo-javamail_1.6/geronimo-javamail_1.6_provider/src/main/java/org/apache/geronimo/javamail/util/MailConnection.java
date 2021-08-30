@@ -236,7 +236,7 @@ public class MailConnection {
         this.password = password;
         
         // make sure we have the realm information 
-        realm = props.getProperty(MAIL_SASL_REALM); 
+        realm = props.getProperty(MAIL_SASL_REALM);
         // get an authzid value, if we have one.  The default is to use the username.
         authid = props.getProperty(MAIL_AUTHORIZATIONID, username);
         return true; 
@@ -536,18 +536,9 @@ public class MailConnection {
             socket.setSoTimeout(timeout);
         }
         
-        // if there is a list of protocols specified, we need to break this down into 
-        // the individual names 
-        String protocols = props.getProperty(MAIL_SSL_PROTOCOLS); 
-        if (protocols != null) {
-            ArrayList list = new ArrayList(); 
-            StringTokenizer t = new StringTokenizer(protocols); 
-            
-            while (t.hasMoreTokens()) {
-                list.add(t.nextToken()); 
-            }
-            
-            ((SSLSocket)socket).setEnabledProtocols((String[])list.toArray(new String[list.size()])); 
+        String[] protocols = getSpecifiedProtocols();
+        if(protocols != null) {
+            ((SSLSocket)socket).setEnabledProtocols(protocols);
         }
         
         // and do the same for any cipher suites 
@@ -562,6 +553,26 @@ public class MailConnection {
             
             ((SSLSocket)socket).setEnabledCipherSuites((String[])list.toArray(new String[list.size()])); 
         }
+    }
+
+    /**
+     * If there is a list of protocols specified, we need to break this down into the individual names
+     *
+     * @return {@code null}, if no SSL/TLS protocols are specified in {@link MailConnection#MAIL_SSL_PROTOCOLS}.
+     */
+    protected String[] getSpecifiedProtocols() {
+        String protocols = props.getProperty(MAIL_SSL_PROTOCOLS);
+        if (protocols != null) {
+            ArrayList<String> list = new ArrayList<>();
+            StringTokenizer t = new StringTokenizer(protocols);
+
+            while (t.hasMoreTokens()) {
+                list.add(t.nextToken());
+            }
+
+           return list.toArray(new String[0]);
+        }
+        return null;
     }
 
 
@@ -588,13 +599,19 @@ public class MailConnection {
                 createSSLSocketFromSSLContext(true);
             }
 
-            // if this is an instance of SSLSocket (very common), try setting the protocol to be
-            // "TLSv1".  If this is some other class because of a factory override, we'll just have to
+            // If this is an instance of SSLSocket (very common), try setting the protocol.
+            // If this is some other class because of a factory override, we'll just have to
             // accept that things will work.
             if (socket instanceof SSLSocket) {
                 String[] suites = ((SSLSocket)socket).getSupportedCipherSuites();
                 ((SSLSocket)socket).setEnabledCipherSuites(suites);
-                ((SSLSocket)socket).setEnabledProtocols(new String[] {"TLSv1"} );
+                String[] protocols = getSpecifiedProtocols();
+                if(protocols != null) {
+                    ((SSLSocket)socket).setEnabledProtocols(protocols);
+                } else {
+                    // no custom protocols were specified; use it as is.
+                    debugOut("No custom protocols specified, using the enabled protocols of the given SSLSocket: " + Arrays.toString(((SSLSocket) socket).getEnabledProtocols()));
+                }
                 ((SSLSocket)socket).setUseClientMode(true);
                 debugOut("Initiating STARTTLS handshake");
                 ((SSLSocket)socket).startHandshake();
@@ -602,12 +619,12 @@ public class MailConnection {
                 throw new IOException("Socket is not an instance of SSLSocket, maybe wrong configured ssl factory?");
             }
 
-            getConnectionStreams(); 
+            getConnectionStreams();
             debugOut("TLS connection established"); 
      	}
         catch (Exception e) {
             debugOut("Failure attempting to convert connection to TLS", e);
-     	    throw new MessagingException("Unable to convert connection to SSL", e);
+     	    throw new MessagingException("Unable to convert connection to TLS", e);
      	}
     }
     
