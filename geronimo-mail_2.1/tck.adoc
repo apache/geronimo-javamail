@@ -20,7 +20,7 @@ Start the container:
 
 Exec onto the container to finish the setup
 
-`docker exec -ti tck_mailserver_1 /bin/bash`
+`docker exec -ti mail-tck_mailserver_1 /bin/bash`
 
 Run these commands to complete the setup
 

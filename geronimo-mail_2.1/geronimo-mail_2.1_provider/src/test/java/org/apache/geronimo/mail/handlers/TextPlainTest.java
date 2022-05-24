@@ -16,16 +16,16 @@
  */
 package org.apache.geronimo.mail.handlers;
 
-import java.awt.datatransfer.DataFlavor;
+import jakarta.activation.ActivationDataFlavor;
 
 /**
  * @version $Rev$ $Date$
  */
 public class TextPlainTest extends AbstractHandler {
     public void testDataFlavor() {
-        DataFlavor[] flavours = dch.getTransferDataFlavors();
+        ActivationDataFlavor[] flavours = dch.getTransferDataFlavors();
         assertEquals(1, flavours.length);
-        DataFlavor flavor = flavours[0];
+        ActivationDataFlavor flavor = flavours[0];
         assertEquals(String.class, flavor.getRepresentationClass());
         assertEquals("text/plain", flavor.getMimeType());
         assertEquals("Plain Text", flavor.getHumanPresentableName());

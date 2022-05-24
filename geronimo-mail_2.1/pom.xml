@@ -43,7 +43,7 @@
     <properties>
         <siteId>javamail/${project.artifactId}</siteId>
         <projectName>Apache Geronimo Mail Bundle</projectName>
-        <geronimo-mail_2.1_spec.version>1.0.0-SNAPSHOT</geronimo-mail_2.1_spec.version>
+        <geronimo-mail_2.1_spec.version>1.0.0-M1</geronimo-mail_2.1_spec.version>
     </properties>
 
     <url>http://geronimo.apache.org/maven/${siteId}/${project.version}</url>
@@ -60,7 +60,7 @@
             <dependency>
                 <groupId>org.apache.geronimo.specs</groupId>
                 <artifactId>geronimo-activation_2.0_spec</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.0.0</version>
             </dependency>
 
             <dependency>
