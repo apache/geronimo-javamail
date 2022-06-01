@@ -267,7 +267,9 @@ public class IMAPResponseTokenizer {
             return EOF;
         } else {
             byte ch = response[pos];
-            if (ch == '\"') {
+            if (ch == Token.CONTINUATION) {
+                return new Token(ch, String.valueOf((char)ch)); // we don't really care about what's after
+            } else if (ch == '\"') {
                 return readQuotedString();
             // beginning of a length-specified literal?
             } else if (ch == '{') {
