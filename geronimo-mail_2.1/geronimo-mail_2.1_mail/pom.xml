@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.apache.geronimo.mail</groupId>
         <artifactId>geronimo-mail_2.1</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>geronimo-mail_2.1_mail</artifactId>

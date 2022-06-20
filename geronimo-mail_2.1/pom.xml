@@ -27,7 +27,7 @@
     <name>Geronimo Mail 2.1</name>
     <packaging>pom</packaging>
 
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <description>
         Geronimo Mail Bundle.
@@ -37,7 +37,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/geronimo-javamail.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/geronimo-javamail.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf/geronimo-javamail.git</url>
-        <tag>geronimo-mail_2.1-1.0.0</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <properties>
